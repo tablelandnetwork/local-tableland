@@ -54,6 +54,26 @@ const cleanup = async function () {
     });
     await rmTemp.status();
 
+    const VALIDATOR_DIR = Deno.env.get('VALIDATOR_DIR');
+    if (typeof VALIDATOR_DIR !== 'string') throw new Error('you must supply path to Validator');
+
+    const dbFiles = [
+        join(__dirname, VALIDATOR_DIR, '/local/api/database.db'),
+        join(__dirname, VALIDATOR_DIR, '/local/api/database.db-shm'),
+        join(__dirname, VALIDATOR_DIR, '/local/api/database.db-wal')
+    ];
+
+    for (const filepath of dbFiles) {
+        const rmDb = Deno.run({
+            cmd: [
+                'rm',
+                '-f',
+                filepath
+            ]
+        });
+        await rmDb.status();
+    }
+
 };
 
 const pipeNamedSubprocess = async function (prefix: string, reader: Deno.Reader, writer: Deno.Writer) {
