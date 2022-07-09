@@ -194,12 +194,14 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const tableId = await getTableId(tableland, receipt.txnHash);
         const chainId = 31337;
-        // NOTE: tableId is 0 which is not allowed
-        const queryableName = `${prefix}_${chainId}_0`;
+        // NOTE: the tableId is owned by this account, but the name is wrong
+        const queryableName = `invalid_prefix_${chainId}_${tableId}`;
 
         await expect(async function () {
             await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
-        }).rejects.toThrow(`table ${queryableName} does not exist`);
+        }).rejects.toThrow(
+          `db query execution failed (code: TABLE_LOOKUP, msg: table prefix lookup for table id: table prefix lookup: no such table: ${queryableName})`
+        );
     });
 
 });
