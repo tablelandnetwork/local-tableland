@@ -159,6 +159,29 @@ describe('Validator, Chain, and SDK work end to end', function () {
         await expect(table.controller).toEqual('0x71bE63f3384f5fb98995898A86B02Fb2426c5788' /* account 11 pubkey */ );
     });
 
+    test('write to a table without using the relay', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer, {rpcRelay: false});
+
+        const prefix = 'test_direct_write';
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
+
+        const tableId = await getTableId(tableland, receipt.txnHash);
+        const chainId = 31337;
+        const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+        const writeRes = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+
+        expect(typeof writeRes.hash).toEqual('string');
+        await waitForTx(tableland, writeRes.hash);
+
+        const data = await tableland.read(`SELECT * FROM ${queryableName};`);
+        await expect(data.rows).toEqual([['tree', 'aspen']]);
+    });
+
 });
 
 describe('Validator gateway server', function () {
