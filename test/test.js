@@ -182,6 +182,26 @@ describe('Validator, Chain, and SDK work end to end', function () {
         await expect(data.rows).toEqual([['tree', 'aspen']]);
     });
 
+    test('write without relay statement is validated first', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer, {rpcRelay: false});
+
+        const prefix = 'test_direct_invalid_write';
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
+
+        const tableId = await getTableId(tableland, receipt.txnHash);
+        const chainId = 31337;
+        // NOTE: tableId is 0 which is not allowed
+        const queryableName = `${prefix}_${chainId}_0`;
+
+        await expect(async function () {
+            await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+        }).rejects.toThrow(`table ${queryableName} does not exist`);
+    });
+
 });
 
 describe('Validator gateway server', function () {
