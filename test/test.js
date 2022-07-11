@@ -182,7 +182,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         await expect(data.rows).toEqual([['tree', 'aspen']]);
     });
 
-    test('write without relay statement is validated first', async function () {
+    test('write without relay statement validates table name prefix', async function () {
         const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
         const provider = new providers.JsonRpcProvider('http://localhost:8545');
         const signer = wallet.connect(provider);
@@ -191,16 +191,41 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const prefix = 'test_direct_invalid_write';
         const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
+        // wait until table is materialized, TODO: SDK will do this internally in the future
+        await getTableId(tableland, receipt.txnHash);
 
-        const tableId = await getTableId(tableland, receipt.txnHash);
-        const chainId = 31337;
-        // NOTE: the tableId is owned by this account, but the name is wrong
-        const queryableName = `invalid_prefix_${chainId}_${tableId}`;
+        const prefix2 = 'test_direct_invalid_write2'
+        const receipt2 = await tableland.create('keyy TEXT, val TEXT', prefix2);
+        const tableId2 = await getTableId(tableland, receipt2.txnHash);
+
+        // the tableId is owned by this account and id exists, but the prefix is wrong
+        const queryableName = `${prefix}_31337_${tableId2}`;
 
         await expect(async function () {
             await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
         }).rejects.toThrow(
-          `db query execution failed (code: TABLE_LOOKUP, msg: table prefix lookup for table id: table prefix lookup: no such table: ${queryableName})`
+          `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
+        );
+    });
+
+    test('write without relay statement validates table ID', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer, {rpcRelay: false});
+
+        const prefix = 'test_direct_invalid_id_write';
+        const receipt = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const tableId = await getTableId(tableland, receipt.txnHash);
+
+        // the tableId 0 does not exist
+        const queryableName = `${prefix}_31337_0`;
+
+        await expect(async function () {
+            await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+        }).rejects.toThrow(
+          `getting table: failed to get the table: sql: no rows in result set`
         );
     });
 
