@@ -218,12 +218,12 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const prefix = 'test_create_setcontroller_norelay';
         // `key` is a reserved word in sqlite
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
+        const { name } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
 
         // Set the controller to Hardhat #7
-        const { hash } = await tableland.setController(tableId, '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955');
+        const { hash } = await tableland.setController('0x14dC79964da2C08b23698B3D3cc7Ca32193d9955', name);
 
         expect(typeof hash).toEqual('string');
         expect(hash.length).toEqual(66);
@@ -240,12 +240,12 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const prefix = 'test_create_setcontroller_relay';
         // `key` is a reserved word in sqlite
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
+        const { name } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
 
         // Set the controller to Hardhat #7
-        const { hash } = await tableland.setController(tableId, '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955');
+        const { hash } = await tableland.setController('0x14dC79964da2C08b23698B3D3cc7Ca32193d9955', name);
 
         expect(typeof hash).toEqual('string');
         expect(hash.length).toEqual(56);
