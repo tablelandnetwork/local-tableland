@@ -31,7 +31,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
 
         const prefix = 'test_create_read';
         // `key` is a reserved word in sqlite
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
 
@@ -47,7 +47,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_write';
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -68,7 +68,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_not_allowed';
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -98,7 +98,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_delete';
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -130,7 +130,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer);
 
         const prefix = 'test_create_list';
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -152,7 +152,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer, {rpcRelay: false});
 
         const prefix = 'test_direct_write';
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
         const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -173,10 +173,10 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer, {rpcRelay: false});
 
         const prefix = 'test_direct_invalid_write';
-        await tableland.create('keyy TEXT, val TEXT', prefix);
+        await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         const prefix2 = 'test_direct_invalid_write2'
-        const { tableId } = await tableland.create('keyy TEXT, val TEXT', prefix2);
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix: prefix2 });
 
         // both tables owned by the same account
         // the prefix is for the first table, but id is for second table
@@ -197,7 +197,7 @@ describe('Validator, Chain, and SDK work end to end', function () {
         const tableland = await getTableland(signer, {rpcRelay: false});
 
         const prefix = 'test_direct_invalid_id_write';
-        await tableland.create('keyy TEXT, val TEXT', prefix);
+        await tableland.create('keyy TEXT, val TEXT', { prefix });
 
         // the tableId 0 does not exist since we start with tableId == 1
         const queryableName = `${prefix}_31337_0`;
@@ -207,6 +207,48 @@ describe('Validator, Chain, and SDK work end to end', function () {
         }).rejects.toThrow(
           `getting table: failed to get the table: sql: no rows in result set`
         );
+    });
+
+    test('set controller without relay', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer, { rpcRelay: false });
+
+        const prefix = 'test_create_setcontroller_norelay';
+        // `key` is a reserved word in sqlite
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
+
+        const chainId = 31337;
+
+        // Set the controller to Hardhat #7
+        const { hash } = await tableland.setController(tableId, '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955');
+
+        expect(typeof hash).toEqual('string');
+        expect(hash.length).toEqual(66);
+    });
+
+    test('set controller with relay', async function () {
+        const wallet = new Wallet('0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d' /* Hardhat #1 */);
+        const provider = new providers.JsonRpcProvider('http://localhost:8545');
+        const signer = wallet.connect(provider);
+
+        const tableland = await getTableland(signer, {
+            rpcRelay: true /* this is default `true`, just being explicit */
+        });
+
+        const prefix = 'test_create_setcontroller_relay';
+        // `key` is a reserved word in sqlite
+        const { tableId } = await tableland.create('keyy TEXT, val TEXT', { prefix });
+
+        const chainId = 31337;
+
+        // Set the controller to Hardhat #7
+        const { hash } = await tableland.setController(tableId, '0x14dC79964da2C08b23698B3D3cc7Ca32193d9955');
+
+        expect(typeof hash).toEqual('string');
+        expect(hash.length).toEqual(56);
     });
 
 });
@@ -230,7 +272,7 @@ describe('Validator gateway server', function () {
         const tableland1 = await getTableland(signer1);
 
         const prefix = 'test_transaction';
-        const { txnHash, tableId } = await tableland1.create('keyy TEXT, val TEXT', prefix);
+        const { txnHash, tableId } = await tableland1.create('keyy TEXT, val TEXT', { prefix });
 
         const chainId = 31337;
 
