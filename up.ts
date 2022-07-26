@@ -5,7 +5,8 @@
 import {
   cyan,
   brightGreen,
-  magenta,red
+  magenta,
+  red,
 } from "https://deno.land/std@0.140.0/fmt/colors.ts";
 import { delay } from "https://deno.land/std@0.140.0/async/delay.ts";
 import { readLines } from "https://deno.land/std@0.140.0/io/mod.ts";
@@ -19,64 +20,42 @@ const initEmitter = new EventEmitter();
 const __dirname = path.dirname(path.fromFileUrl(import.meta.url));
 
 const rmImage = async function (name: string) {
-  const rm = Deno.run({cmd: [
-    "docker",
-    "image",
-    "rm",
-    name,
-    "-f"
-  ]});
+  const rm = Deno.run({ cmd: ["docker", "image", "rm", name, "-f"] });
   await rm.status();
 };
 
 const cleanup = async function () {
-  const pruneContainer = Deno.run({cmd: [
-    "docker",
-    "container",
-    "prune",
-    "-f"
-  ]});
+  const pruneContainer = Deno.run({
+    cmd: ["docker", "container", "prune", "-f"],
+  });
   await pruneContainer.status();
 
   await rmImage("docker_api");
 
-  const pruneVolume = Deno.run({cmd: [
-    "docker",
-    "volume",
-    "prune",
-    "-f"
-  ]});
-  await pruneVolume.status()
+  const pruneVolume = Deno.run({ cmd: ["docker", "volume", "prune", "-f"] });
+  await pruneVolume.status();
 
   const rmTemp = Deno.run({
-    cmd: [
-      "rm",
-      "-rf",
-      "./tmp"
-    ]
+    cmd: ["rm", "-rf", "./tmp"],
   });
   await rmTemp.status();
 
   const VALIDATOR_DIR = Deno.env.get("VALIDATOR_DIR");
-  if (typeof VALIDATOR_DIR !== "string") throw new Error("you must supply path to Validator");
+  if (typeof VALIDATOR_DIR !== "string")
+    throw new Error("you must supply path to Validator");
 
   const dbFiles = [
     join(__dirname, VALIDATOR_DIR, "/local/api/database.db"),
     join(__dirname, VALIDATOR_DIR, "/local/api/database.db-shm"),
-    join(__dirname, VALIDATOR_DIR, "/local/api/database.db-wal")
+    join(__dirname, VALIDATOR_DIR, "/local/api/database.db-wal"),
   ];
 
   for (const filepath of dbFiles) {
     const rmDb = Deno.run({
-      cmd: [
-        "rm",
-        "-f",
-        filepath
-      ]
+      cmd: ["rm", "-f", filepath],
     });
     await rmDb.status();
   }
-
 };
 
 const pipeNamedSubprocess = async function (
@@ -91,14 +70,14 @@ const pipeNamedSubprocess = async function (
   let ready = !(options && options.message);
 
   for await (const line of readLines(reader)) {
-  if (!ready) {
-    if (line.includes(options.message) && options.readyEvent) {
-      initEmitter.emit(options.readyEvent);
-      ready = true;
+    if (!ready) {
+      if (line.includes(options.message) && options.readyEvent) {
+        initEmitter.emit(options.readyEvent);
+        ready = true;
+      }
     }
-  }
 
-  await writeAll(writer, encoder.encode(`[${prefix}] ${line}\n`));
+    await writeAll(writer, encoder.encode(`[${prefix}] ${line}\n`));
   }
 };
 
@@ -122,26 +101,24 @@ const start = async function () {
   const VALIDATOR_DIR = Deno.env.get("VALIDATOR_DIR");
   const HARDHAT_DIR = Deno.env.get("HARDHAT_DIR");
 
-  if (typeof VALIDATOR_DIR !== "string") throw new Error("you must supply path to Validator");
-  if (typeof HARDHAT_DIR !== "string") throw new Error("you must supply path to Hardhat");
+  if (typeof VALIDATOR_DIR !== "string")
+    throw new Error("you must supply path to Validator");
+  if (typeof HARDHAT_DIR !== "string")
+    throw new Error("you must supply path to Hardhat");
 
   // Run a local hardhat node
   const hardhat = Deno.run({
     cwd: HARDHAT_DIR,
-    cmd: [
-      "npm",
-      "run",
-      "up"
-    ],
+    cmd: ["npm", "run", "up"],
     stdout: "piped",
-    stderr: "piped"
+    stderr: "piped",
   });
 
   const hardhatReadyEvent = "hardhat ready";
   // NOTE: the process should keep running until we kill it
   pipeNamedSubprocess(cyan("Hardhat"), hardhat.stdout, Deno.stdout, {
     readyEvent: hardhatReadyEvent,
-    message: "Mined empty block"
+    message: "Mined empty block",
   });
   pipeNamedSubprocess(red("Hardhat"), hardhat.stderr, Deno.stderr);
 
@@ -157,55 +134,64 @@ const start = async function () {
       "run",
       "--network",
       "localhost",
-      "scripts/deploy.ts"
+      "scripts/deploy.ts",
     ],
     stdout: "piped",
-    stderr: "piped"
+    stderr: "piped",
   });
-  pipeNamedSubprocess(brightGreen("Deploy Registry:"), deployRegistry.stdout, Deno.stdout);
-  pipeNamedSubprocess(red("Deploy Registry:"), deployRegistry.stderr, Deno.stderr);
+  pipeNamedSubprocess(
+    brightGreen("Deploy Registry:"),
+    deployRegistry.stdout,
+    Deno.stdout
+  );
+  pipeNamedSubprocess(
+    red("Deploy Registry:"),
+    deployRegistry.stderr,
+    Deno.stderr
+  );
 
   // wait till the deploy finishes
   await deployRegistry.status();
 
   // Add the registry address to the Validator config
   const configFilePath = join(VALIDATOR_DIR, "local/api/config.json");
-  const validatorConfig = JSON.parse(
-    await Deno.readTextFile(configFilePath)
-  );
-  validatorConfig.Chains[0].Registry.ContractAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+  const validatorConfig = JSON.parse(await Deno.readTextFile(configFilePath));
+  validatorConfig.Chains[0].Registry.ContractAddress =
+    "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
 
-  await Deno.writeTextFile(configFilePath, JSON.stringify(validatorConfig, null, 2));
+  await Deno.writeTextFile(
+    configFilePath,
+    JSON.stringify(validatorConfig, null, 2)
+  );
 
   // Add a .env file to the validator
-  const validatorEnv = await Deno.readTextFile(join(__dirname, ".env_validator"))
-  await Deno.writeTextFile(join(VALIDATOR_DIR, "local/api/.env_validator"), validatorEnv);
+  const validatorEnv = await Deno.readTextFile(
+    join(__dirname, ".env_validator")
+  );
+  await Deno.writeTextFile(
+    join(VALIDATOR_DIR, "local/api/.env_validator"),
+    validatorEnv
+  );
 
   // start the validator
   const validator = Deno.run({
     cwd: VALIDATOR_DIR,
-    cmd: [
-      "make",
-      "local-up"
-    ],
+    cmd: ["make", "local-up"],
     stdout: "piped",
-    stderr: "piped"
+    stderr: "piped",
   });
 
   const validatorReadyEvent = "validator ready";
   // NOTE: the process should keep running until we kill it
   pipeNamedSubprocess(magenta("Validator"), validator.stdout, Deno.stdout, {
     readyEvent: validatorReadyEvent,
-    message: "processing height"
+    message: "processing height",
   });
   pipeNamedSubprocess(red("Validator"), validator.stderr, Deno.stderr);
 
   // copy the api spec to a place the tests can find it
   const mkdirTemp = Deno.run({
-    cmd: [
-      "mkdir",
-      "./tmp"
-    ]
+    cmd: ["mkdir", "./tmp"],
   });
   await mkdirTemp.status();
 
@@ -213,8 +199,8 @@ const start = async function () {
     cmd: [
       "cp",
       join(VALIDATOR_DIR, "..", "tableland-openapi-spec.yaml"),
-      "./tmp"
-    ]
+      "./tmp",
+    ],
   });
   await openApiSpec.status();
 
