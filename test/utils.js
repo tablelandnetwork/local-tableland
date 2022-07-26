@@ -1,5 +1,6 @@
 import fs from "fs";
 import yaml from "js-yaml";
+import { Wallet, providers } from "ethers";
 import { connect } from "@tableland/sdk";
 
 export const HOST = "http://localhost:8080";
@@ -52,7 +53,7 @@ export const testHttpResponse = async function (res, expected) {
   testSameTypes(json, expected);
 };
 
-// This is a fairly simple test that the response and the spec"s example resonses have the same types
+// This is a fairly simple test that the response and the spec's example resonses have the same types
 export const testSameTypes = function (res, expected) {
   // log in case someone wants to manually inspect
   console.log(res, expected);
@@ -99,7 +100,7 @@ export const renderPath = function (tmpl, data) {
 
 export const loadSpecTestData = function (specPath, renderData) {
 
-  // Let"s consume the open api spec and map it to fetch requests that we can test the spec"s responses against
+  // Let's consume the open api spec and map it to fetch requests that we can test the spec's responses against
   const spec = yaml.load(fs.readFileSync(specPath, "utf8"));
   const routes = [];
   const tests = [];
@@ -176,7 +177,7 @@ export const loadSpecTestData = function (specPath, renderData) {
     routes.push({ route, routeTemplate, methods });
   }
 
-  // Now we have the routes methods and what the request body"s (if any) look like
+  // Now we have the routes methods and what the request body's (if any) look like
   for (let i = 0; i < routes.length; i++) {
     const route = routes[i].route;
     const routeTemplate = routes[i].routeTemplate;

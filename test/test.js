@@ -50,7 +50,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
     const writeRes = await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "aspen")`
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
     );
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
@@ -76,7 +76,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const signer2 = accounts[2];
     const tableland2 = await getTableland(signer2);
 
-    const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "aspen")`);
+    const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
 
     const data2 = await tableland2.read(`SELECT * FROM ${queryableName};`);
 
@@ -95,18 +95,18 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    const write1 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "aspen")`);
+    const write1 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
 
     expect(typeof write1.hash).toEqual("string");
 
-    const write2 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "pine")`);
+    const write2 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`);
 
     expect(typeof write2.hash).toEqual("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
     await expect(data.rows.length).toEqual(2);
 
-    const delete1 = await tableland.write(`DELETE FROM ${queryableName} WHERE val = "pine";`);
+    const delete1 = await tableland.write(`DELETE FROM ${queryableName} WHERE val = 'pine';`);
 
     expect(typeof delete1.hash).toEqual("string");
 
@@ -114,7 +114,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     await expect(data2.rows.length).toEqual(1);
   }, 30000);
 
-  test("List an account\"s tables", async function () {
+  test("List an account's tables", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -131,7 +131,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const table = tablesMeta.find(table => table.name === queryableName);
 
     await expect(table).toBeDefined();
-    await expect(table.controller).toEqual("0x71bE63f3384f5fb98995898A86B02Fb2426c5788" /* account 11 pubkey */ );
+    await expect(table.controller).toEqual(accounts[1].address);
   });
 
   test("write to a table without using the relay", async function () {
@@ -145,7 +145,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    const writeRes = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "aspen")`);
+    const writeRes = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
 
     expect(typeof writeRes.hash).toEqual("string");
 
@@ -169,9 +169,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_31337_${tableId}`;
 
     await expect(async function () {
-      await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "aspen")`);
+      await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
     }).rejects.toThrow(
-      `table prefix doesn"t match (exp ${prefix2}, got ${prefix})`
+      `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
     );
   });
 
@@ -187,7 +187,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_31337_0`;
 
     await expect(async function () {
-      await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ("tree", "aspen")`);
+      await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
     }).rejects.toThrow(
       `getting table: failed to get the table: sql: no rows in result set`
     );
@@ -282,16 +282,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
 describe("Validator gateway server", function () {
   let token, transactionHash;
   beforeAll(async function () {
-    // get our wallet, provider, and signer and a connection to tableland so that we can craft a realistic HTTP request
-    const provider = new providers.JsonRpcProvider("http://localhost:8545");
-
     // TODO: split openapi spec tests and js tests into different files and npm commands,
     //       then `npm test` can run everything.
     const signer0 = accounts[0];
     const tableland0 = await getTableland(signer0);
     await tableland0.siwe();
 
-    // We can"t use the Validator"s Wallet to create tables because the Validator"s nonce tracking will get out of sync
+    // We can"t use the Validator's Wallet to create tables because the Validator's nonce tracking will get out of sync
     const signer1 = accounts[1];
     const tableland1 = await getTableland(signer1);
 
