@@ -323,6 +323,28 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(lastStructure.structure).toEqual(structureHash);
   });
 
+  test("A write that violates table constraints throws error", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_create_tc_violation";
+    const { tableId } = await tableland.create("id TEXT, name TEXT, PRIMARY KEY(id)", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await expect(async function () {
+      await tableland.write(
+        `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
+      );
+    }).rejects.toThrow(
+      new RegExp("query execution failed \\(code\\: SQLITE_NOT NULL constraint failed")
+    );
+  });
+
 });
 
 describe("Validator gateway server", function () {
