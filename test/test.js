@@ -75,13 +75,15 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const signer2 = accounts[2];
     const tableland2 = await getTableland(signer2);
-
-    const writeRes = await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+    
+    await expect(async function () {
+      await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+    }).rejects.toThrow(
+      "db query execution failed (code: ACL, msg: not enough privileges)"
+    );
 
     const data2 = await tableland2.read(`SELECT * FROM ${queryableName};`);
-
-    await expect(typeof writeRes.hash).toEqual("string");
-    await expect(data.rows).toEqual([]);
+    await expect(data2.rows).toEqual([]);
   });
 
   test("Create a table can have a row deleted", async function () {
@@ -341,7 +343,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
         `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
       );
     }).rejects.toThrow(
-      new RegExp("query execution failed \\(code\\: SQLITE_NOT NULL constraint failed")
+      `db query execution failed (code: SQLITE_UNIQUE constraint failed: ${queryableName}.id, msg: UNIQUE constraint failed: ${queryableName}.id)`
     );
   });
 
