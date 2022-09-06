@@ -1,10 +1,15 @@
 {
+  "name": "local-tableland",
   "scripts": {
     "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
     "lint-js": "eslint up.ts test/ --ext .js,.jsx,.ts,.tsx",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
-    "up": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker deno run --allow-run --allow-env --allow-read --allow-write up.ts"
+    "build": "tsc",
+    "up": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker node bin/up.js"
+  },
+  "bin": {
+    "local-tableland": "bin/up.js"
   },
   "type": "module",
   "devDependencies": {
