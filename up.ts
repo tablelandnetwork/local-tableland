@@ -1,4 +1,4 @@
-#!/usr/bin/env deno run --allow-run --allow-env --allow-read --allow-write
+#!/usr/bin/env node
 
 /**
  *  Run end to end Tableland

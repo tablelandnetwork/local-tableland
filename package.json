@@ -9,7 +9,7 @@
     "up": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker node bin/up.js"
   },
   "bin": {
-    "local-tableland": "bin/up.js"
+    "local-tableland": "HARDHAT_DIR=../evm-tableland VALIDATOR_DIR=../go-tableland/docker node bin/up.js"
   },
   "type": "module",
   "devDependencies": {
