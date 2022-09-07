@@ -115,6 +115,7 @@ const isExtraneousLog = function (log: string) {
   if (log.match(/eth_subscribe/i)) return true;
   if (log.match(/new blocks subscription is quiet, rebuilding/i)) return true;
   if (log.match(/received new chain header/i)) return true;
+  if (log.match(/dropping new height/i)) return true;
 
   return false;
 }

@@ -109,6 +109,8 @@ const isExtraneousLog = function (log) {
         return true;
     if (log.match(/received new chain header/i))
         return true;
+    if (log.match(/dropping new height/i))
+        return true;
     return false;
 };
 // an emitter to help with init logic across the multiple sub-processes
