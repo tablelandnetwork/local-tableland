@@ -2,16 +2,15 @@
  *  Run end to end Tableland
  **/
 import { spawn, spawnSync } from "node:child_process";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "url";
-import yargs from "yargs/yargs";
-import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
-const argv = yargs(hideBin(process.argv)).argv;
+import { confGetter, pipeNamedSubprocess, waitForReady } from "./util.js";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+// TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
 // TODO: we need to build out a nice way to build a config object from
@@ -19,104 +18,10 @@ let ORIGINAL_VALIDATOR_CONFIG;
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
 //       3. a `tableland.config.js` file, which is either inside `process.pwd()` or specified
 //          via command line arg.  e.g. `npx local-tableland --config ../tlb-confib.js`
-const configDescriptors = [
-    {
-        name: "Validator project directory",
-        env: "VALIDATOR_DIR",
-        file: "validatorDir",
-        arg: "validator",
-        isPath: true
-    }, {
-        name: "Tableland registry contract project directory",
-        env: "HARDHAT_DIR",
-        file: "hardhatDir",
-        arg: "hardhat",
-        isPath: true
-    }, {
-        name: "Should output a verbose log",
-        env: "VERBOSE",
-        file: "verbose",
-        arg: "verbose",
-    }
-];
-const confGetter = async function (confName) {
-    let val;
-    const configDescriptor = configDescriptors.find(v => v.name === confName);
-    if (!configDescriptor)
-        throw new Error("cannot generate getter");
-    const configFile = await getConfigFile();
-    return function () {
-        // simple caching so we only have to do the lookup once
-        if (val)
-            return val;
-        const file = configFile[configDescriptor.file];
-        // TODO: figure out why typescript won't let me do `const arg = argv[configDescriptor.arg];`
-        // @ts-ignore
-        const arg = argv[configDescriptor.arg];
-        const env = process.env[configDescriptor.env];
-        // priority is: command argument, then environment variable, then config file
-        val = arg || env || file;
-        if (configDescriptor.isPath) {
-            // if the value is absent then we can return undefined
-            if (!val)
-                return;
-            // if the path is absolute just pass it along
-            if (isAbsolute(val)) {
-                return val;
-            }
-            // if path is not absolute treat it as if it's relative
-            // to this repo's root and build the absolute path
-            // NOTE: this is transpiled into the bin directory before being run, hence the "..  "
-            val = resolve(__dirname, "..", val);
-            return val;
-        }
-        return val;
-    };
-};
 let getValidatorDir;
 let getHardhatDir;
 let getVerbose;
-const getConfigFile = async function () {
-    try {
-        const { default: confFile } = await import(join(process.cwd(), "tableland.config.js"));
-        return confFile;
-    }
-    catch (err) {
-        // can't find and import tableland config file
-        return {};
-    }
-};
-const isExtraneousLog = function (log) {
-    log = log.toLowerCase();
-    if (log.match(/eth_getLogs/i))
-        return true;
-    if (log.match(/Mined empty block/i))
-        return true;
-    if (log.match(/eth_getBlockByNumber/i))
-        return true;
-    if (log.match(/eth_getBalance/i))
-        return true;
-    if (log.match(/processing height/i))
-        return true;
-    if (log.match(/new last processed height/i))
-        return true;
-    if (log.match(/eth_unsubscribe/i))
-        return true;
-    if (log.match(/eth_subscribe/i))
-        return true;
-    if (log.match(/new blocks subscription is quiet, rebuilding/i))
-        return true;
-    if (log.match(/received new chain header/i))
-        return true;
-    if (log.match(/dropping new height/i))
-        return true;
-    return false;
-};
-// an emitter to help with init logic across the multiple sub-processes
-const initEmitter = new EventEmitter();
-const rmImage = function (name) {
-    spawnSync("docker", ["image", "rm", name, "-f"]);
-};
+// TODO: should this be a per instance method?
 // cleanup should restore everything to the starting state.
 // e.g. remove docker images and database backups
 const cleanup = function () {
@@ -127,10 +32,13 @@ const cleanup = function () {
         console.log(chalk.red(dcError));
         throw dcError;
     }
-    rmImage("docker_api");
+    spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
     spawnSync("docker", ["volume", "prune", "-f"]);
     spawnSync("rm", ["-rf", "./tmp"]);
     const VALIDATOR_DIR = getValidatorDir();
+    // If the directory hasn't been specified there isn't anything to clean up
+    if (!VALIDATOR_DIR)
+        return;
     const dbFiles = [
         join(VALIDATOR_DIR, "/docker/local/api/database.db"),
         join(VALIDATOR_DIR, "/docker/local/api/database.db-shm"),
@@ -145,90 +53,35 @@ const cleanup = function () {
         writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
     }
 };
-const pipeNamedSubprocess = async function (prefix, prcss, options) {
-    let ready = !(options && options.message);
-    const fails = options === null || options === void 0 ? void 0 : options.fails;
-    const verbose = getVerbose();
-    prcss.stdout.on('data', function (data) {
-        // data is going to be a buffer at runtime
-        data = data.toString();
-        if (!data)
-            return;
-        let lines = data.split('\n');
-        if (!verbose) {
-            lines = lines.filter(line => !isExtraneousLog(line));
-            // if not verbose we are going to elliminate multiple empty
-            // lines and any messages that don't have at least one character
-            if (!lines.filter(line => line.trim()).length) {
-                lines = [];
-            }
-            else {
-                lines = lines.reduce((acc, cur) => {
-                    if (acc.length && !acc[acc.length - 1] && !cur.trim())
-                        return acc;
-                    // @ts-ignore
-                    return acc.concat([cur.trim()]);
-                }, []);
-            }
-        }
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            if (!verbose && isExtraneousLog(line))
-                continue;
-            console.log(`[${prefix}] ${line}`);
-        }
-        if (!ready) {
-            if (data.includes(options.message) && options.readyEvent) {
-                initEmitter.emit(options.readyEvent);
-                ready = true;
-            }
-        }
-    });
-    prcss.stderr.on('data', function (data) {
-        // data is going to be a buffer at runtime
-        data = data.toString();
-        if (!data)
-            return;
-        const lines = data.split('\n');
-        for (let i = 0; i < lines.length; i++) {
-            const line = lines[i];
-            console.error(`[${prefix}] ${line}`);
-        }
-        if (fails && data.includes(fails.message)) {
-            process.exit();
-        }
-    });
-};
-const waitForReady = function (readyEvent) {
-    return new Promise(function (resolve) {
-        initEmitter.once(readyEvent, () => resolve());
-    });
-};
-const shutdown = async function () {
-    cleanup();
-    process.exit();
-};
 const start = async function () {
-    // make sure we are starting fresh
-    cleanup();
-    process.on("SIGINT", shutdown);
-    process.on("SIGQUIT", shutdown);
+    // an emitter to help with init logic across the multiple sub-processes
+    const initEmitter = new EventEmitter();
     const VALIDATOR_DIR = getValidatorDir();
     const HARDHAT_DIR = getHardhatDir();
     const verbose = getVerbose();
+    if (!(VALIDATOR_DIR && HARDHAT_DIR)) {
+        // If these aren't specified then we want to open a terminal
+        // prompt that will help the user setup their project directory
+        // TODO: build out a prompt much like hardhat or create-vue-app
+    }
+    // make sure we are starting fresh
+    cleanup();
     // Run a local hardhat node
     const hardhat = spawn("npm", ["run", "up"], {
         cwd: HARDHAT_DIR,
     });
     const hardhatReadyEvent = "hardhat ready";
-    // NOTE: the process should keep running until we kill it
+    // this process should keep running until we kill it
     pipeNamedSubprocess(chalk.bold.cyan("Hardhat"), hardhat, {
+        // use events to indicate when the underlying process is finished
+        // initializing and is ready to participate in the Tableland network
         readyEvent: hardhatReadyEvent,
+        emitter: initEmitter,
         message: "Mined empty block",
         verbose: verbose
     });
     // wait until initialization is done
-    await waitForReady(hardhatReadyEvent);
+    await waitForReady(hardhatReadyEvent, initEmitter);
     // Deploy the Registry to the Hardhat node
     spawnSync("npx", [
         "hardhat",
@@ -257,28 +110,36 @@ const start = async function () {
     // Add a .env file to the validator
     const validatorEnv = readFileSync(resolve(__dirname, "..", ".env_validator"));
     writeFileSync(join(VALIDATOR_DIR, "/docker/local/api/.env_validator"), validatorEnv);
-    const validatorReadyEvent = "validator ready";
     // start the validator
     const validator = spawn("make", ["local-up"], {
         cwd: join(VALIDATOR_DIR, "docker")
     });
-    // NOTE: the process should keep running until we kill it
+    const validatorReadyEvent = "validator ready";
+    // this process should keep running until we kill it
     pipeNamedSubprocess(chalk.bold.yellow("Validator"), validator, {
+        // use events to indicate when the underlying process is finished
+        // initializing and is ready to participate in the Tableland network
         readyEvent: validatorReadyEvent,
+        emitter: initEmitter,
         message: "processing height",
+        verbose: verbose,
         fails: {
             message: "Cannot connect to the Docker daemon",
             hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?"
         }
     });
     // wait until initialization is done
-    await waitForReady(validatorReadyEvent);
+    await waitForReady(validatorReadyEvent, initEmitter);
     console.log("\n\n******  Tableland is running!  ******");
     console.log("             _________");
     console.log("         ___/         \\");
     console.log("        /              \\");
     console.log("       /                \\");
     console.log("______/                  \\______\n\n");
+};
+export const shutdown = async function () {
+    cleanup();
+    process.exit();
 };
 export const main = async function () {
     getValidatorDir = await confGetter("Validator project directory");
