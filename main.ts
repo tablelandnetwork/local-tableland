@@ -118,9 +118,6 @@ const isExtraneousLog = function (log: string) {
   return false;
 }
 
-// an emitter to help with init logic across the multiple sub-processes
-const initEmitter = new EventEmitter();
-
 const rmImage = function (name: string) {
   spawnSync("docker", ["image", "rm", name, "-f"]);
 };
@@ -142,6 +139,8 @@ const cleanup = function () {
   spawnSync("rm", ["-rf", "./tmp"]);
 
   const VALIDATOR_DIR = getValidatorDir();
+  // If the directory hasn't been specified there isn't anything to clean up
+  if (!VALIDATOR_DIR) return;
 
   const dbFiles = [
     join(VALIDATOR_DIR, "/docker/local/api/database.db"),
@@ -201,7 +200,7 @@ const pipeNamedSubprocess = async function (
     }
     if (!ready) {
       if (data.includes(options.message) && options.readyEvent) {
-        initEmitter.emit(options.readyEvent);
+        options.emitter.emit(options.readyEvent);
         ready = true;
       }
     }
@@ -224,28 +223,30 @@ const pipeNamedSubprocess = async function (
 
 };
 
-const waitForReady = function (readyEvent: string): Promise<void> {
+// enable async/await for underlying event pattern
+const waitForReady = function (readyEvent: string, emitter: EventEmitter): Promise<void> {
   return new Promise(function (resolve) {
-    initEmitter.once(readyEvent, () => resolve());
+    emitter.once(readyEvent, () => resolve());
   });
 };
 
-const shutdown = async function () {
-  cleanup();
-
-  process.exit();
-};
-
 const start = async function () {
-  // make sure we are starting fresh
-  cleanup();
-
-  process.on("SIGINT", shutdown);
-  process.on("SIGQUIT", shutdown);
+  // an emitter to help with init logic across the multiple sub-processes
+  const initEmitter = new EventEmitter();
 
   const VALIDATOR_DIR = getValidatorDir();
   const HARDHAT_DIR = getHardhatDir();
   const verbose = getVerbose();
+
+  if (!(VALIDATOR_DIR && HARDHAT_DIR)) {
+    // If these aren't specified then we want to open a terminal
+    // prompt that will help the user setup their project directory
+    // TODO: build out a prompt much like hardhat or create-vue-app
+
+  }
+
+  // make sure we are starting fresh
+  cleanup();
 
   // Run a local hardhat node
   const hardhat = spawn("npm", ["run", "up"], {
@@ -253,15 +254,18 @@ const start = async function () {
   });
 
   const hardhatReadyEvent = "hardhat ready";
-  // NOTE: the process should keep running until we kill it
+  // this process should keep running until we kill it
   pipeNamedSubprocess(chalk.bold.cyan("Hardhat"), hardhat, {
+    // use events to indicate when the underlying process is finished
+    // initializing and is ready to participate in the Tableland network
     readyEvent: hardhatReadyEvent,
+    emitter: initEmitter,
     message: "Mined empty block",
     verbose: verbose
   });
 
   // wait until initialization is done
-  await waitForReady(hardhatReadyEvent);
+  await waitForReady(hardhatReadyEvent, initEmitter);
 
   // Deploy the Registry to the Hardhat node
   spawnSync("npx", [
@@ -306,15 +310,18 @@ const start = async function () {
     validatorEnv
   );
 
-  const validatorReadyEvent = "validator ready";
   // start the validator
   const validator = spawn("make", ["local-up"], {
     cwd: join(VALIDATOR_DIR, "docker")
   });
 
-  // NOTE: the process should keep running until we kill it
+  const validatorReadyEvent = "validator ready";
+  // this process should keep running until we kill it
   pipeNamedSubprocess(chalk.bold.yellow("Validator"), validator, {
+    // use events to indicate when the underlying process is finished
+    // initializing and is ready to participate in the Tableland network
     readyEvent: validatorReadyEvent,
+    emitter: initEmitter,
     message: "processing height",
     fails: {
       message: "Cannot connect to the Docker daemon",
@@ -323,7 +330,7 @@ const start = async function () {
   });
 
   // wait until initialization is done
-  await waitForReady(validatorReadyEvent);
+  await waitForReady(validatorReadyEvent, initEmitter);
 
   console.log("\n\n******  Tableland is running!  ******");
   console.log("             _________");
@@ -331,6 +338,12 @@ const start = async function () {
   console.log("        /              \\");
   console.log("       /                \\");
   console.log("______/                  \\______\n\n");
+};
+
+export const shutdown = async function () {
+  cleanup();
+
+  process.exit();
 };
 
 export const main = async function () {

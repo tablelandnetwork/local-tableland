@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
-import { main } from "./main";
+import { main, shutdown } from "./main.js";
 
+
+// TODO: main should export a constructor and this file should create and start one instance
 // start a tableland network
 main().catch((err) => {
   console.error("unrecoverable error")
@@ -9,3 +11,6 @@ main().catch((err) => {
 
   process.exit();
 });
+
+process.on("SIGINT", shutdown);
+process.on("SIGQUIT", shutdown);

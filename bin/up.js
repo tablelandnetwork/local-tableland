@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { main } from "./main";
+import { main } from "./main.js";
 // start a tableland network
 main().catch((err) => {
     console.error("unrecoverable error");
