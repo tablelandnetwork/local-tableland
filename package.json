@@ -1,5 +1,6 @@
 {
-  "name": "local-tableland",
+  "name": "@tableland/local",
+  "main": "bin/main.js",
   "scripts": {
     "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
     "lint-js": "eslint up.ts test/ --ext .js,.jsx,.ts,.tsx",
@@ -10,7 +11,7 @@
     "up": "VALIDATOR_DIR=../go-tableland HARDHAT_DIR=../evm-tableland node bin/up.js"
   },
   "bin": {
-    "local-tableland": "bin/up.js"
+    "@tableland/local": "bin/up.js"
   },
   "type": "module",
   "devDependencies": {

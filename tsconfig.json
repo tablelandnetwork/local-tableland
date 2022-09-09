@@ -22,5 +22,5 @@
     "types": ["node"],
     "lib": ["ES6"]
   },
-  "include": ["up.ts"]
+  "include": ["up.ts", "main.ts"]
 }
