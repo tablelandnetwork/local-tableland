@@ -1,10 +1,10 @@
-import { /*dirname,*/ isAbsolute, join, resolve } from "node:path";
-//import { fileURLToPath } from "url";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+import { fileURLToPath } from "url";
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
 const argv = yargs(hideBin(process.argv)).argv;
-//const __filename = fileURLToPath(import.meta.url);
-//const __dirname = dirname(__filename);
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 // TODO: we need to build out a nice way to build a config object from
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
@@ -92,8 +92,9 @@ export const confGetter = async function (confName) {
                 return val;
             }
             // if path is not absolute treat it as if it's relative
-            // to calling cwd and build the absolute path
-            val = resolve(process.cwd(), val);
+            // to this repo's root and build the absolute path
+            // NOTE: this is transpiled into the bin directory before being run, hence the "..  "
+            val = resolve(__dirname, "..", val);
             return val;
         }
         return val;

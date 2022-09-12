@@ -9,6 +9,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "url";
 import chalk from "chalk";
 import { confGetter, pipeNamedSubprocess, waitForReady } from "./util.js"
+import { projectBuilder } from "./project-builder.js";
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -84,12 +85,14 @@ const start = async function () {
     // If these aren't specified then we want to open a terminal
     // prompt that will help the user setup their project directory
     // TODO: build out a prompt much like hardhat or create-vue-app
-
+    await projectBuilder();
+    shutdown();
+    return;
   }
 
   // make sure we are starting fresh
   cleanup();
-
+console.log("registry directory", HARDHAT_DIR);
   // Run a local hardhat node
   const hardhat = spawn("npm", ["run", "up"], {
     cwd: HARDHAT_DIR,
@@ -183,7 +186,7 @@ const start = async function () {
   console.log("______/                  \\______\n\n");
 };
 
-export const shutdown = async function () {
+export const shutdown = function () {
   cleanup();
 
   process.exit();

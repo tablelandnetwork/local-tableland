@@ -70,7 +70,6 @@ const start = async function () {
     }
     // make sure we are starting fresh
     cleanup();
-    console.log("registry directory", HARDHAT_DIR);
     // Run a local hardhat node
     const hardhat = spawn("npm", ["run", "up"], {
         cwd: HARDHAT_DIR,

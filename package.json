@@ -18,9 +18,11 @@
     "@tableland/evm": "^2.0.4",
     "@tableland/sdk": "^3.1.1",
     "@types/jest": "^27.5.1",
-    "@typescript-eslint/eslint-plugin": "^5.37.0",
+    "@types/sentencer": "^0.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.36.2",
     "@typescript-eslint/parser": "^5.36.2",
     "chalk": "^5.0.1",
+    "enquirer": "^2.3.6",
     "eslint": "^8.23.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-config-standard": "^17.0.0",
@@ -32,6 +34,7 @@
     "jest": "^28.1.0",
     "js-yaml": "^4.1.0",
     "prettier": "^2.7.1",
+    "sentencer": "^0.2.1",
     "ts-jest": "^28.0.8",
     "yargs": "^17.5.1"
   }
