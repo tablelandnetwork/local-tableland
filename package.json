@@ -1,5 +1,6 @@
 {
   "name": "@tableland/local",
+  "version": "0.0.0-pre",
   "main": "bin/main.js",
   "scripts": {
     "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
@@ -35,6 +36,7 @@
     "js-yaml": "^4.1.0",
     "prettier": "^2.7.1",
     "sentencer": "^0.2.1",
+    "terminal-link": "^3.0.0",
     "ts-jest": "^28.0.8",
     "yargs": "^17.5.1"
   }
