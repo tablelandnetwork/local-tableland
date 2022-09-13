@@ -1,13 +1,21 @@
-import { /*dirname,*/ isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
-//import { fileURLToPath } from "url";
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
 
-const argv = yargs(hideBin(process.argv)).argv
-//const __filename = fileURLToPath(import.meta.url);
-//const __dirname = dirname(__filename);
-
+const argv = yargs(hideBin(process.argv)).options({
+  upgrade: {
+    type: "boolean",
+    default: false,
+    alias: "u",
+    description: "Update your Validator and Registry repositories.\n" +
+                 "If your Validator or Registry is located outside\n" +
+                 "this project this command will not do anything."
+  },
+  validator: { type: "string" },
+  hardhat: { type: "string" },
+  verbose: { type: "boolean", default: false }
+}).strict().argv
 
 // TODO: we need to build out a nice way to build a config object from
 //       1. env vars

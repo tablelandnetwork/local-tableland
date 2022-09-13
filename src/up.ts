@@ -2,7 +2,6 @@
 
 import { main, shutdown } from "./main.js";
 
-
 // TODO: main should export a constructor and this file should create and start one instance
 // start a tableland network
 main().catch((err) => {

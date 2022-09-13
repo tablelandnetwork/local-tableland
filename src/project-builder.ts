@@ -1,10 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
 import chalk from "chalk";
-import terminalLink from "terminal-link";
 import prompt from "enquirer";
 import sentencer from "sentencer";
 import exampleConfig from "./tableland.config.example.js"
+
+
+const docsLink = "https://docs.tableland.xyz";
+const githubLink = "https://github.com/tablelandnetwork";
 
 export const projectBuilder = async function () {
   const choices = [
@@ -21,12 +24,10 @@ export const projectBuilder = async function () {
 
   const shouldCreate = await select.run();
   if (shouldCreate === choices[0]) {
-    const docsLink = "https://docs.tableland.xyz";
-    const guthubLink = "https://github.com/tablelandnetwork";
     console.log(
 `${chalk.bold.yellow(sentencer.make("OK, have a wonderfully {{ adjective }} {{ noun }}!"))}
-  Don't forget to checkout our docs at  ${chalk.cyan(terminalLink(docsLink, docsLink))}
-  and star us on github at ${chalk.cyan(terminalLink(githubLink, githubLink))}`
+  Don't forget to checkout our docs at ${chalk.cyan(docsLink)}
+  and star us on github at ${chalk.cyan(githubLink)}`
     )
     return;
   }
@@ -43,9 +44,9 @@ export const projectBuilder = async function () {
   }
 
   if (!mkdirArtifacts) {
-    console.log(chalk.yellow(`OK, ${chalk.bold("not")} creating any directories.`));
+    console.log(chalk.yellow(`${chalk.bold("Not")} creating any directories.`));
   } else {
-    console.log(chalk.yellow(`OK, creating a ${chalk.bold("tableland-artifacts")} directory.`));
+    console.log(chalk.yellow(`Creating a ${chalk.bold("tableland-artifacts")} directory.`));
     // make an artifacts directory
     spawnSync("mkdir", ["tableland-artifacts"]);
   }
@@ -62,9 +63,9 @@ export const projectBuilder = async function () {
   }
 
   if (!gitCloneValidator) {
-    console.log(chalk.yellow(`OK, ${chalk.bold("not")} cloning the Validator repository.`));
+    console.log(chalk.yellow(`${chalk.bold("Not")} cloning the Validator repository.`));
   } else {
-    console.log(chalk.yellow("OK, cloning the Validator repository."));
+    console.log(chalk.yellow("Cloning the Validator repository."));
     spawnSync("git", ["clone", "git@github.com:tablelandnetwork/go-tableland.git"], {
       cwd: "tableland-artifacts"
     });
@@ -82,8 +83,9 @@ export const projectBuilder = async function () {
   }
 
   if (!gitCloneEvm) {
-    console.log(chalk.yellow(`OK, ${chalk.bold("not")} cloning the Registry repository.`));
+    console.log(chalk.yellow(`${chalk.bold("Not")} cloning the Registry repository.`));
   } else {
+    console.log(chalk.yellow("Cloning the Registry repository."));
     // clone the validator
     spawnSync("git", ["clone", "git@github.com:tablelandnetwork/evm-tableland.git"], {
       cwd: "tableland-artifacts"
@@ -102,15 +104,18 @@ export const projectBuilder = async function () {
   }
 
   if (!createConfig) {
-    console.log(chalk.yellow(`OK, ${chalk.bold("not")} creating a config file.`));
+    console.log(chalk.yellow(`${chalk.bold("Not")} creating a config file.`));
   } else {
+    console.log(chalk.yellow(`Creating a config file.`));
     // Copy the example config to the new project
     writeFileSync("tableland.config.js", "module.exports = " + JSON.stringify(exampleConfig, null, 2));
   }
 
   console.log(
-`${chalk.bold.yellow("Setup is done.")}
+`${chalk.bold.yellow("Setup is done!")}
   If you didn't skip any steps you you can start a local Tableland Network by running this command again.
   Use the --help flag to see an overview of usage for this cli.
-` );
+  Checkout our docs at ${chalk.cyan(docsLink)}
+  All the source is on github at ${chalk.cyan(githubLink)}`
+  );
 };
