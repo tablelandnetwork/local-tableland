@@ -1,6 +1,17 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.0-pre",
+  "version": "0.0.0-pre1",
+  "description": "Tooling to start a sandboxed Tableland network.",
+  "repository": "https://github.com/tablelandnetwork/local-tableland",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "keywords": [
+    "tableland",
+    "sql",
+    "ethereum"
+  ],
   "main": "bin/main.js",
   "scripts": {
     "test-js": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",

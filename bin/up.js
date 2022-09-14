@@ -1,13 +1,4 @@
 #!/usr/bin/env node
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { LocalTableland } from "./main.js";
 import { getConfigFile } from "./util.js";
 import yargs from "yargs/yargs";
@@ -35,16 +26,14 @@ const argv = yargs(hideBin(process.argv)).options({
         description: "Output verbose logs to stdout"
     }
 }).argv;
-const go = function () {
-    return __awaiter(this, void 0, void 0, function* () {
-        const config = yield getConfigFile();
-        const tableland = new LocalTableland(config);
-        // TODO: I think listening for SIGQUIT might break windows.
-        //       Need to get access to a windows machine and test.
-        process.on("SIGINT", tableland.shutdown.bind(tableland));
-        process.on("SIGQUIT", tableland.shutdown.bind(tableland));
-        yield tableland.start(argv);
-    });
+const go = async function () {
+    const config = await getConfigFile();
+    const tableland = new LocalTableland(config);
+    // TODO: I think listening for SIGQUIT might break windows.
+    //       Need to get access to a windows machine and test.
+    process.on("SIGINT", tableland.shutdown.bind(tableland));
+    process.on("SIGQUIT", tableland.shutdown.bind(tableland));
+    await tableland.start(argv);
 };
 // start a tableland network, then catch any uncaught errors and exit loudly
 go().catch((err) => {
