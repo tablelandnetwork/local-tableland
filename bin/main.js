@@ -79,7 +79,6 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     });
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance
-    console.log(chalk.red(join(this.validatorDir, "/docker/local/api/.env_validator")));
     writeFileSync(join(this.validatorDir, "/docker/local/api/.env_validator"), " ");
     // Add the registry address to the Validator config
     const configFilePath = join(this.validatorDir, "/docker/local/api/config.json");

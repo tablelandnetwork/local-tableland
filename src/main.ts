@@ -83,7 +83,6 @@ export class LocalTableland {
 
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance
-    console.log(chalk.red(join(this.validatorDir, "/docker/local/api/.env_validator")));
     writeFileSync(
       join(this.validatorDir, "/docker/local/api/.env_validator"),
       " "
