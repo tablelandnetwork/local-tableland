@@ -1,6 +1,6 @@
 declare const config: {
     validatorDir: string;
-    hardhatDir: string;
+    registryDir: string;
     verbose: boolean;
 };
 export default config;

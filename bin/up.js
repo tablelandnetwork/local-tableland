@@ -1,12 +1,44 @@
 #!/usr/bin/env node
-import { main, shutdown } from "./main.js";
-// TODO: main should export a constructor and this file should create and start one instance
-// start a tableland network
-main().catch((err) => {
+import { LocalTableland } from "./main.js";
+import { getConfigFile } from "./util.js";
+import yargs from "yargs/yargs";
+import { hideBin } from "yargs/helpers";
+const argv = yargs(hideBin(process.argv)).options({
+    upgrade: {
+        type: "boolean",
+        default: false,
+        alias: "u",
+        description: "Update your Validator and Registry repositories.\n" +
+            "If your Validator or Registry is located outside\n" +
+            "this project this command will not do anything."
+    },
+    validator: {
+        type: "string",
+        description: "Path the the Tableland Validator repository"
+    },
+    registry: {
+        type: "string",
+        description: "Path the the Tableland Registry contract repository"
+    },
+    verbose: {
+        type: "boolean",
+        default: false,
+        description: "Output verbose logs to stdout"
+    }
+}).argv;
+const go = async function () {
+    const config = await getConfigFile();
+    const tableland = new LocalTableland(config);
+    // TODO: I think listening for SIGQUIT might break windows.
+    //       Need to get access to a windows machine and test.
+    process.on("SIGINT", tableland.shutdown.bind(tableland));
+    process.on("SIGQUIT", tableland.shutdown.bind(tableland));
+    await tableland.start(argv);
+};
+// start a tableland network, then catch any uncaught errors and exit loudly
+go().catch((err) => {
     console.error("unrecoverable error");
     console.error(err);
     process.exit();
 });
-process.on("SIGINT", shutdown);
-process.on("SIGQUIT", shutdown);
 //# sourceMappingURL=up.js.map

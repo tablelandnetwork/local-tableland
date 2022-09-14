@@ -9,7 +9,7 @@
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",
     "build": "tsc",
-    "up": "VALIDATOR_DIR=../go-tableland HARDHAT_DIR=../evm-tableland node bin/up.js"
+    "up": "node bin/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "bin": {
     "local-tableland": "bin/up.js"

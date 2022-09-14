@@ -20,7 +20,7 @@ export const projectBuilder = async function () {
     });
     const shouldCreate = await select.run();
     if (shouldCreate === choices[0]) {
-        console.log(`${chalk.bold.yellow(sentencer.make("OK, have a wonderfully {{ adjective }} {{ noun }}!"))}
+        console.log(`${chalk.bold.yellow(sentencer.make("OK, have a wonderfully {{ adverb }} {{ noun }}!"))}
   Don't forget to checkout our docs at ${chalk.cyan(docsLink)}
   and star us on github at ${chalk.cyan(githubLink)}`);
         return;

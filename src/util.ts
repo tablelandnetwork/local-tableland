@@ -1,21 +1,5 @@
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
-import yargs from "yargs/yargs";
-import { hideBin } from "yargs/helpers";
-
-const argv = yargs(hideBin(process.argv)).options({
-  upgrade: {
-    type: "boolean",
-    default: false,
-    alias: "u",
-    description: "Update your Validator and Registry repositories.\n" +
-                 "If your Validator or Registry is located outside\n" +
-                 "this project this command will not do anything."
-  },
-  validator: { type: "string" },
-  hardhat: { type: "string" },
-  verbose: { type: "boolean", default: false }
-}).strict().argv
 
 // TODO: we need to build out a nice way to build a config object from
 //       1. env vars
@@ -31,9 +15,9 @@ const configDescriptors = [
     isPath: true
   }, {
     name: "Tableland registry contract project directory",
-    env: "HARDHAT_DIR",
-    file: "hardhatDir",
-    arg: "hardhat",
+    env: "REGISTRY_DIR",
+    file: "registryDir",
+    arg: "registry",
     isPath: true
   }, {
     name: "Should output a verbose log",
@@ -43,7 +27,40 @@ const configDescriptors = [
   }
 ];
 
-const getConfigFile = async function () {
+export const configGetter = async function (configName: string, configFile: any, argv: any) {
+  const configDescriptor = configDescriptors.find(v => v.name === configName);
+  if (!configDescriptor) throw new Error("cannot generate getter");
+
+  const file = configFile[configDescriptor.file];
+  // TODO: figure out why typescript won't let me do `const arg = argv[configDescriptor.arg];`
+  // @ts-ignore
+  const arg = argv[configDescriptor.arg];
+  const env = process.env[configDescriptor.env];
+
+  let val: any;
+  // priority is: command argument, then environment variable, then config file
+  val = arg || env || file;
+
+  if (configDescriptor.isPath) {
+    // if the value is absent then we can return undefined
+    if (!val) return;
+
+    // if the path is absolute just pass it along
+    if (isAbsolute(val)) {
+      return val;
+    }
+
+    // if path is not absolute treat it as if it's relative
+    // to calling cwd and build the absolute path
+    val = resolve(process.cwd(), val);
+    return val;
+  }
+
+  return val;
+
+};
+
+export const getConfigFile = async function () {
   try {
     const { default: confFile } = await import(join(process.cwd(), "tableland.config.js"));
 
@@ -70,44 +87,6 @@ const isExtraneousLog = function (log: string) {
   if (log.match(/dropping new height/i)) return true;
 
   return false;
-};
-
-export const confGetter = async function (confName: string) {
-  let val: any;
-  const configDescriptor = configDescriptors.find(v => v.name === confName);
-  if (!configDescriptor) throw new Error("cannot generate getter");
-  const configFile = await getConfigFile();
-
-  return function () {
-    // simple caching so we only have to do the lookup once
-    if (val) return val;
-
-    const file = configFile[configDescriptor.file];
-    // TODO: figure out why typescript won't let me do `const arg = argv[configDescriptor.arg];`
-    // @ts-ignore
-    const arg = argv[configDescriptor.arg];
-    const env = process.env[configDescriptor.env];
-
-    // priority is: command argument, then environment variable, then config file
-    val = arg || env || file;
-
-    if (configDescriptor.isPath) {
-      // if the value is absent then we can return undefined
-      if (!val) return;
-
-      // if the path is absolute just pass it along
-      if (isAbsolute(val)) {
-        return val;
-      }
-
-      // if path is not absolute treat it as if it's relative
-      // to calling cwd and build the absolute path
-      val = resolve(process.cwd(), val);
-      return val;
-    }
-
-    return val;
-  };
 };
 
 export const pipeNamedSubprocess = async function (

@@ -1,5 +1,16 @@
 /**
  *  Run end to end Tableland
  **/
-export declare const shutdown: () => never;
-export declare const main: () => Promise<void>;
+/// <reference types="node" />
+import { EventEmitter } from "node:events";
+export declare class LocalTableland {
+    #private;
+    config: any;
+    initEmitter: EventEmitter;
+    validatorDir?: string;
+    registryDir?: string;
+    verbose?: boolean;
+    constructor(config: any);
+    start(argv: any): Promise<void>;
+    shutdown(): void;
+}
