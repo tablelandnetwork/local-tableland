@@ -5,7 +5,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { EventEmitter } from "node:events";
-import { writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import chalk from "chalk";
 import { configGetter, pipeNamedSubprocess, waitForReady } from "./util.js"
 import { projectBuilder } from "./project-builder.js";
@@ -81,9 +81,18 @@ export class LocalTableland {
       cwd: this.registryDir
     });
 
+    // Add an empty .env file to the validator. The Validator expects this to exist,
+    // but doesn't need any of the values when running a local instance
+    console.log(chalk.red(join(this.validatorDir, "/docker/local/api/.env_validator")));
+    writeFileSync(
+      join(this.validatorDir, "/docker/local/api/.env_validator"),
+      " "
+    );
+
     // Add the registry address to the Validator config
     const configFilePath = join(this.validatorDir, "/docker/local/api/config.json");
-    const { default: validatorConfig } = await import(configFilePath, {assert: {type: "json"}});
+    const configFileStr = readFileSync(configFilePath).toString();
+    const validatorConfig = JSON.parse(configFileStr);
 
     // save the validator config state before this script modifies it
     ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2)
