@@ -3,17 +3,13 @@
  **/
 
 import { spawn, spawnSync } from "node:child_process";
-import { dirname, join, resolve } from "node:path";
+import { join } from "node:path";
 import { EventEmitter } from "node:events";
-import { readFileSync, writeFileSync } from "node:fs";
-import { fileURLToPath } from "url";
+import { writeFileSync } from "node:fs";
 import chalk from "chalk";
 import { configGetter, pipeNamedSubprocess, waitForReady } from "./util.js"
 import { projectBuilder } from "./project-builder.js";
 
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
@@ -85,13 +81,6 @@ export class LocalTableland {
       cwd: this.registryDir
     });
 
-    // copy the api spec to a place the tests can find it
-    spawnSync("mkdir", ["./tmp"]);
-    spawnSync("cp", [
-      join(this.validatorDir, "tableland-openapi-spec.yaml"),
-      "./tmp",
-    ]);
-
     // Add the registry address to the Validator config
     const configFilePath = join(this.validatorDir, "/docker/local/api/config.json");
     const { default: validatorConfig } = await import(configFilePath, {assert: {type: "json"}});
@@ -106,15 +95,6 @@ export class LocalTableland {
     writeFileSync(
       configFilePath,
       JSON.stringify(validatorConfig, null, 2)
-    );
-
-    // Add a .env file to the validator
-    const validatorEnv = readFileSync(
-      resolve(__dirname, "..", ".env_validator")
-    );
-    writeFileSync(
-      join(this.validatorDir, "/docker/local/api/.env_validator"),
-      validatorEnv
     );
 
     // start the validator

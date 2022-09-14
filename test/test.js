@@ -10,6 +10,17 @@ import {
 } from "./utils";
 
 const __dirname = path.resolve(path.dirname(""));
+// TODO: we were using these tests to check the validator's OAS spec via
+// copy copying the file during local tableland startup. Now that is a dev
+// product, these kind of tests need to be separated
+// e.g.
+/*  spawnSync("mkdir", ["./tmp"]);
+    spawnSync("cp", [
+      join(this.validatorDir, "tableland-openapi-spec.yaml"),
+      "./tmp",
+    ]);
+*/
+
 
 // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
 jest.setTimeout(25000);
