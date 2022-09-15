@@ -228,13 +228,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
   });
 
-  test("Read a single row with `extract` option", async function () {
+  test("Read with `extract` option", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
 
     const prefix = "test_read_extract";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+    const { tableId } = await tableland.create("val TEXT", {
       prefix
     });
 
@@ -242,17 +242,20 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
     await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      `INSERT INTO ${queryableName} (val) VALUES ('aspen')`
+    );
+    await tableland.write(
+      `INSERT INTO ${queryableName} (val) VALUES ('pine')`
     );
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
       extract: true
     });
 
-    await expect(data).toEqual({keyy: "tree", val: "aspen"});
+    await expect(data).toEqual(["aspen", "pine"]);
   });
 
-  test("Read two rows with `extract` option fails", async function () {
+  test("Read table with two columns with `extract` option fails", async function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer);
@@ -268,19 +271,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     await tableland.write(
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
     );
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
-    );
-    await tableland.write(
-      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
-    );
 
     await expect(async function () {
       await tableland.read(`SELECT * FROM ${queryableName};`, {
         extract: true
       });
     }).rejects.toThrow(
-      "can only extract values for result sets with one column but this has 3"
+      "can only extract values for result sets with one column but this has 2"
     );
   });
 
