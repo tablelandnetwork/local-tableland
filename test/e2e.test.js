@@ -126,6 +126,164 @@ describe("Validator, Chain, and SDK work end to end", function () {
     await expect(data2.length).toEqual(1);
   }, 30000);
 
+  test("Read a table with `table` output", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_read";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+
+    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
+      output: "table"
+    });
+
+    await expect(data.columns).toEqual([{name: "keyy"}, {name: "val"}]);
+    await expect(data.rows).toEqual([["tree", "aspen"]]);
+  });
+
+  test("Read a table with `objects` output", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_read";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+
+    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
+      output: "objects"
+    });
+
+    await expect(data).toEqual([{keyy: "tree", val: "aspen"}]);
+  });
+
+  test("Read a single row with `unwrap` option", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_read";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+
+    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
+      unwrap: true
+    });
+
+    await expect(data).toEqual({keyy: "tree", val: "aspen"});
+  });
+
+  test("Read two rows with `unwrap` option fails", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_read";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+    );
+
+    await expect(async function () {
+      await tableland.read(`SELECT * FROM ${queryableName};`, {
+        unwrap: true
+      });
+    }).rejects.toThrow(
+      "unwrapped results with more than one row aren't supported in JSON RPC API"
+    );
+  });
+
+  test("Read a single row with `extract` option", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_read_extract";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+
+    const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
+      extract: true
+    });
+
+    await expect(data).toEqual({keyy: "tree", val: "aspen"});
+  });
+
+  test("Read two rows with `extract` option fails", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_read";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+    );
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+    );
+
+    await expect(async function () {
+      await tableland.read(`SELECT * FROM ${queryableName};`, {
+        extract: true
+      });
+    }).rejects.toThrow(
+      "can only extract values for result sets with one column but this has 3"
+    );
+  });
+
   test("List an account's tables", async function () {
     const signer = accounts[1];
 
