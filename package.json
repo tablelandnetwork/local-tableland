@@ -33,7 +33,7 @@
     "yargs": "^17.5.1"
   },
   "devDependencies": {
-    "@tableland/sdk": "^3.1.1",
+    "@tableland/sdk": "^3.1.2",
     "@types/jest": "^27.5.1",
     "@types/sentencer": "^0.2.0",
     "@types/yargs": "^17.0.12",
