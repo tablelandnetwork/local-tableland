@@ -28,19 +28,8 @@ const accounts = getAccounts();
 
 // NOTE: these tests require the a local Tableland is already running
 describe("Validator, Chain, and SDK work end to end", function () {
-  test("just do a single read", async function () {
-    const signer = accounts[1];
-    const tableland = await getTableland(signer);
-
-    const data = await tableland.read(
-      `SELECT * FROM test_create_read_31337_68;`
-    );
-    expect(data).toEqual([]);
-  });
-
   test("Create a table that can be read from", async function () {
     const signer = accounts[1];
-
     const tableland = await getTableland(signer);
 
     const prefix = "test_create_read";
@@ -127,14 +116,14 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(typeof write2.hash).toEqual("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data.rows.length).toEqual(2);
+    await expect(data.length).toEqual(2);
 
     const delete1 = await tableland.write(`DELETE FROM ${queryableName} WHERE val = 'pine';`);
 
     expect(typeof delete1.hash).toEqual("string");
 
     const data2 = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data2.rows.length).toEqual(1);
+    await expect(data2.length).toEqual(1);
   }, 30000);
 
   test("List an account's tables", async function () {
@@ -173,7 +162,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(typeof writeRes.hash).toEqual("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data.rows).toEqual([["tree", "aspen"]]);
+    await expect(data).toEqual([{keyy: "tree", val: "aspen"}]);
   });
 
   test("write without relay statement validates table name prefix", async function () {

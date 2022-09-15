@@ -58,6 +58,7 @@ export const testSameTypes = function (res, expected) {
   // log in case someone wants to manually inspect
   console.log(res, expected);
   for (const prop in expected) {
+    console.log(prop);
     expect(typeof res[prop]).toEqual(typeof expected[prop]);
 
     if (expected[prop] && typeof expected[prop] === "object") {
