@@ -43,7 +43,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const data = await tableland.read(
       `SELECT * FROM ${prefix}_${chainId}_${tableId};`
     );
-    expect(data).toEqual([]);
+    expect(data.rows).toEqual([]);
   });
 
   test("Create a table that can be written to", async function () {
@@ -66,7 +66,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
 
     await expect(typeof writeRes.hash).toEqual("string");
-    await expect(data).toEqual([{keyy: "tree", val: "aspen"}]);
+    await expect(data.rows).toEqual([["tree", "aspen"]]);
   });
 
   test("Table cannot be written to unless caller is allowed", async function () {
@@ -81,7 +81,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data).toEqual([]);
+    await expect(data.rows).toEqual([]);
 
     const signer2 = accounts[2];
     const tableland2 = await getTableland(signer2);
@@ -93,7 +93,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
 
     const data2 = await tableland2.read(`SELECT * FROM ${queryableName};`);
-    await expect(data2).toEqual([]);
+    await expect(data2.rows).toEqual([]);
   });
 
   test("Create a table can have a row deleted", async function () {
@@ -116,14 +116,14 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(typeof write2.hash).toEqual("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data.length).toEqual(2);
+    await expect(data.rows.length).toEqual(2);
 
     const delete1 = await tableland.write(`DELETE FROM ${queryableName} WHERE val = 'pine';`);
 
     expect(typeof delete1.hash).toEqual("string");
 
     const data2 = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data2.length).toEqual(1);
+    await expect(data2.rows.length).toEqual(1);
   }, 30000);
 
   test("Read a table with `table` output", async function () {
@@ -172,7 +172,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
       output: "objects"
     });
 
-    await expect(data).toEqual([{keyy: "tree", val: "aspen"}]);
+    await expect(data).toEqual([{"keyy": "tree", "val": "aspen"}]);
   });
 
   test("Read a single row with `unwrap` option", async function () {
@@ -193,10 +193,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      unwrap: true
+      unwrap: true,
+      output: "objects"
     });
 
-    await expect(data).toEqual({keyy: "tree", val: "aspen"});
+    expect(data).toEqual({"keyy": "tree", "val": "aspen"});
   });
 
   test("Read two rows with `unwrap` option fails", async function () {
@@ -221,7 +222,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     await expect(async function () {
       await tableland.read(`SELECT * FROM ${queryableName};`, {
-        unwrap: true
+        unwrap: true,
+        output: "objects"
       });
     }).rejects.toThrow(
       "unwrapped results with more than one row aren't supported in JSON RPC API"
@@ -249,7 +251,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      extract: true
+      extract: true,
+      output: "objects"
     });
 
     await expect(data).toEqual(["aspen", "pine"]);
@@ -274,7 +277,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     await expect(async function () {
       await tableland.read(`SELECT * FROM ${queryableName};`, {
-        extract: true
+        extract: true,
+        output: "objects"
       });
     }).rejects.toThrow(
       "can only extract values for result sets with one column but this has 2"
@@ -317,7 +321,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(typeof writeRes.hash).toEqual("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
-    await expect(data).toEqual([{keyy: "tree", val: "aspen"}]);
+    expect(data.rows).toEqual([["tree", "aspen"]]);
   });
 
   test("write without relay statement validates table name prefix", async function () {

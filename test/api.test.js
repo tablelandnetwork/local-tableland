@@ -43,7 +43,7 @@ describe("Validator gateway server", function () {
     const chainId = 31337;
 
     const data = await tableland1.read(`SELECT * FROM ${prefix}_${chainId}_${tableId};`);
-    await expect(data).toEqual([]);
+    await expect(data.rows).toEqual([]);
 
     const { tableId: tableId2 } = await tableland1.create("a INT PRIMARY KEY, CHECK (a > 0)", {
       prefix: "test_schema_route"
