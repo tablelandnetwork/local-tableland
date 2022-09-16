@@ -1,10 +1,30 @@
-import { dirname, isAbsolute, join, resolve } from "node:path";
-import { fileURLToPath } from "url";
-import yargs from "yargs/yargs";
-import { hideBin } from "yargs/helpers";
-const argv = yargs(hideBin(process.argv)).argv;
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+"use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.waitForReady = exports.pipeNamedSubprocess = exports.getConfigFile = exports.configGetter = void 0;
+const node_path_1 = require("node:path");
 // TODO: we need to build out a nice way to build a config object from
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
@@ -19,9 +39,9 @@ const configDescriptors = [
         isPath: true
     }, {
         name: "Tableland registry contract project directory",
-        env: "HARDHAT_DIR",
-        file: "hardhatDir",
-        arg: "hardhat",
+        env: "REGISTRY_DIR",
+        file: "registryDir",
+        arg: "registry",
         isPath: true
     }, {
         name: "Should output a verbose log",
@@ -30,9 +50,37 @@ const configDescriptors = [
         arg: "verbose"
     }
 ];
+const configGetter = async function (configName, configFile, argv) {
+    const configDescriptor = configDescriptors.find(v => v.name === configName);
+    if (!configDescriptor)
+        throw new Error("cannot generate getter");
+    const file = configFile[configDescriptor.file];
+    // TODO: figure out why typescript won't let me do `const arg = argv[configDescriptor.arg];`
+    // @ts-ignore
+    const arg = argv[configDescriptor.arg];
+    const env = process.env[configDescriptor.env];
+    let val;
+    // priority is: command argument, then environment variable, then config file
+    val = arg || env || file;
+    if (configDescriptor.isPath) {
+        // if the value is absent then we can return undefined
+        if (!val)
+            return;
+        // if the path is absolute just pass it along
+        if ((0, node_path_1.isAbsolute)(val)) {
+            return val;
+        }
+        // if path is not absolute treat it as if it's relative
+        // to calling cwd and build the absolute path
+        val = (0, node_path_1.resolve)(process.cwd(), val);
+        return val;
+    }
+    return val;
+};
+exports.configGetter = configGetter;
 const getConfigFile = async function () {
     try {
-        const { default: confFile } = await import(join(process.cwd(), "tableland.config.js"));
+        const { default: confFile } = await Promise.resolve().then(() => __importStar(require((0, node_path_1.join)(process.cwd(), "tableland.config.js"))));
         return confFile;
     }
     catch (err) {
@@ -40,6 +88,7 @@ const getConfigFile = async function () {
         return {};
     }
 };
+exports.getConfigFile = getConfigFile;
 const isExtraneousLog = function (log) {
     log = log.toLowerCase();
     if (log.match(/eth_getLogs/i))
@@ -66,41 +115,7 @@ const isExtraneousLog = function (log) {
         return true;
     return false;
 };
-export const confGetter = async function (confName) {
-    let val;
-    const configDescriptor = configDescriptors.find(v => v.name === confName);
-    if (!configDescriptor)
-        throw new Error("cannot generate getter");
-    const configFile = await getConfigFile();
-    return function () {
-        // simple caching so we only have to do the lookup once
-        if (val)
-            return val;
-        const file = configFile[configDescriptor.file];
-        // TODO: figure out why typescript won't let me do `const arg = argv[configDescriptor.arg];`
-        // @ts-ignore
-        const arg = argv[configDescriptor.arg];
-        const env = process.env[configDescriptor.env];
-        // priority is: command argument, then environment variable, then config file
-        val = arg || env || file;
-        if (configDescriptor.isPath) {
-            // if the value is absent then we can return undefined
-            if (!val)
-                return;
-            // if the path is absolute just pass it along
-            if (isAbsolute(val)) {
-                return val;
-            }
-            // if path is not absolute treat it as if it's relative
-            // to this repo's root and build the absolute path
-            // NOTE: this is transpiled into the bin directory before being run, hence the "..  "
-            val = resolve(__dirname, "..", val);
-            return val;
-        }
-        return val;
-    };
-};
-export const pipeNamedSubprocess = async function (prefix, prcss, options) {
+const pipeNamedSubprocess = async function (prefix, prcss, options) {
     let ready = !(options && options.message);
     const fails = options === null || options === void 0 ? void 0 : options.fails;
     const verbose = options.verbose;
@@ -154,10 +169,12 @@ export const pipeNamedSubprocess = async function (prefix, prcss, options) {
         }
     });
 };
+exports.pipeNamedSubprocess = pipeNamedSubprocess;
 // enable async/await for underlying event pattern
-export const waitForReady = function (readyEvent, emitter) {
+const waitForReady = function (readyEvent, emitter) {
     return new Promise(function (resolve) {
         emitter.once(readyEvent, () => resolve());
     });
 };
+exports.waitForReady = waitForReady;
 //# sourceMappingURL=util.js.map

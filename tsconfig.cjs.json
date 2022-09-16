@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "target": "es2017",
+    "outDir": "./bin/cjs/",
+    "module": "commonjs"
+  },
+  "include": ["src/main.ts"]
+}
