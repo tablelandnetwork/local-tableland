@@ -11,6 +11,6 @@ export declare class LocalTableland {
     registryDir?: string;
     verbose?: boolean;
     constructor(config: any);
-    start(argv: any): Promise<void>;
-    shutdown(): void;
+    start(argv?: any): Promise<void>;
+    shutdown(noExit?: boolean): void;
 }

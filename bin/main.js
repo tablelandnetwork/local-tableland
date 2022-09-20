@@ -11,7 +11,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
-import chalk from "chalk";
+import { chalk } from "./chalk.js";
 import { configGetter, pipeNamedSubprocess, waitForReady } from "./util.js";
 import { projectBuilder } from "./project-builder.js";
 // TODO: should this be a per instance value?
@@ -26,7 +26,7 @@ export class LocalTableland {
         this.initEmitter = new EventEmitter();
     }
     ;
-    async start(argv) {
+    async start(argv = {}) {
         this.validatorDir = this.validatorDir || await configGetter("Validator project directory", this.config, argv);
         this.registryDir = this.registryDir || await configGetter("Tableland registry contract project directory", this.config, argv);
         this.verbose = this.verbose || await configGetter("Should output a verbose log", this.config, argv);
@@ -34,8 +34,10 @@ export class LocalTableland {
     }
     ;
     ;
-    shutdown() {
+    shutdown(noExit = false) {
         __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
+        if (noExit)
+            return;
         process.exit();
     }
     ;
@@ -57,7 +59,7 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     });
     const registryReadyEvent = "hardhat ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.bold.cyan("Registry"), registry, {
+    pipeNamedSubprocess(chalk.cyan.bold("Registry"), registry, {
         // use events to indicate when the underlying process is finished
         // initializing and is ready to participate in the Tableland network
         readyEvent: registryReadyEvent,
@@ -96,7 +98,7 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     });
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.bold.yellow("Validator"), validator, {
+    pipeNamedSubprocess(chalk.yellow.bold("Validator"), validator, {
         // use events to indicate when the underlying process is finished
         // initializing and is ready to participate in the Tableland network
         readyEvent: validatorReadyEvent,

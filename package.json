@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.0-pre5",
+  "version": "0.0.0-pre6",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -25,6 +25,10 @@
       "default": "./bin/main.js"
     }
   },
+  "files": [
+    "bin/*",
+    "src/*"
+  ],
   "scripts": {
     "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
     "lint": "eslint up.ts test/ --ext .js,.jsx,.ts,.tsx",

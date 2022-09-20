@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import { writeFileSync } from "node:fs";
-import chalk from "chalk";
+import { chalk } from "./chalk.js";
 import prompt from "enquirer";
 import sentencer from "sentencer";
 import exampleConfig from "./tableland.config.example.js";
@@ -20,7 +20,7 @@ export const projectBuilder = async function () {
     });
     const shouldCreate = await select.run();
     if (shouldCreate === choices[0]) {
-        console.log(`${chalk.bold.yellow(sentencer.make("OK, have a wonderful {{ noun }}!"))}
+        console.log(`${chalk.yellow.bold(sentencer.make("OK, have a wonderful {{ noun }}!"))}
   Don't forget to checkout our docs at ${chalk.cyan(docsLink)}
   and star us on github at ${chalk.cyan(githubLink)}`);
         return;
@@ -96,7 +96,7 @@ export const projectBuilder = async function () {
         // Copy the example config to the new project
         writeFileSync("tableland.config.js", "module.exports = " + JSON.stringify(exampleConfig, null, 2));
     }
-    console.log(`${chalk.bold.yellow("Setup is done!")}
+    console.log(`${chalk.yellow.bold("Setup is done!")}
   If you didn't skip any steps you you can start a local Tableland Network by running this command again.
   Use the --help flag to see an overview of usage for this cli.
   Checkout our docs at ${chalk.cyan(docsLink)}
