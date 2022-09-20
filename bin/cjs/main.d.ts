@@ -10,6 +10,7 @@ export declare class LocalTableland {
     validatorDir?: string;
     registryDir?: string;
     verbose?: boolean;
+    silent?: boolean;
     constructor(config: any);
     start(argv?: any): Promise<void>;
     shutdown(noExit?: boolean): void;

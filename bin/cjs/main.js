@@ -43,6 +43,7 @@ class LocalTableland {
             this.validatorDir = this.validatorDir || (yield (0, util_js_1.configGetter)("Validator project directory", this.config, argv));
             this.registryDir = this.registryDir || (yield (0, util_js_1.configGetter)("Tableland registry contract project directory", this.config, argv));
             this.verbose = this.verbose || (yield (0, util_js_1.configGetter)("Should output a verbose log", this.config, argv));
+            this.silent = this.silent || (yield (0, util_js_1.configGetter)("Should silence logging", this.config, argv));
             yield __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__start).call(this);
         });
     }
@@ -73,6 +74,9 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
         const registry = (0, node_child_process_1.spawn)("npm", ["run", "up"], {
             cwd: this.registryDir,
         });
+        registry.on('error', (err) => {
+            throw new Error(`registry errored with: ${err}`);
+        });
         const registryReadyEvent = "hardhat ready";
         // this process should keep running until we kill it
         (0, util_js_1.pipeNamedSubprocess)(chalk_js_1.chalk.cyan.bold("Registry"), registry, {
@@ -81,7 +85,8 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
             readyEvent: registryReadyEvent,
             emitter: this.initEmitter,
             message: "Mined empty block",
-            verbose: this.verbose
+            verbose: this.verbose,
+            silent: this.silent
         });
         // wait until initialization is done
         yield (0, util_js_1.waitForReady)(registryReadyEvent, this.initEmitter);
@@ -112,6 +117,9 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
         const validator = (0, node_child_process_1.spawn)("make", ["local-up"], {
             cwd: (0, node_path_1.join)(this.validatorDir, "docker")
         });
+        validator.on('error', (err) => {
+            throw new Error(`validator errored with: ${err}`);
+        });
         const validatorReadyEvent = "validator ready";
         // this process should keep running until we kill it
         (0, util_js_1.pipeNamedSubprocess)(chalk_js_1.chalk.yellow.bold("Validator"), validator, {
@@ -121,6 +129,7 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
             emitter: this.initEmitter,
             message: "processing height",
             verbose: this.verbose,
+            silent: this.silent,
             fails: {
                 message: "Cannot connect to the Docker daemon",
                 hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?"

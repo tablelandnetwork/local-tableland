@@ -34,7 +34,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.waitForReady = exports.pipeNamedSubprocess = exports.getConfigFile = exports.configGetter = void 0;
 const node_path_1 = require("node:path");
-// TODO: we need to build out a nice way to build a config object from
+// build a config object from
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
 //       3. a `tableland.config.js` file, which is either inside `process.pwd()` or specified
@@ -57,6 +57,11 @@ const configDescriptors = [
         env: "VERBOSE",
         file: "verbose",
         arg: "verbose"
+    }, {
+        name: "Should silence logging",
+        env: "SILENT",
+        file: "silent",
+        arg: "silent"
     }
 ];
 const configGetter = function (configName, configFile, argv) {
@@ -133,6 +138,7 @@ const pipeNamedSubprocess = function (prefix, prcss, options) {
         let ready = !(options && options.message);
         const fails = options === null || options === void 0 ? void 0 : options.fails;
         const verbose = options.verbose;
+        const silent = options.silent;
         prcss.stdout.on('data', function (data) {
             // data is going to be a buffer at runtime
             data = data.toString();
@@ -155,11 +161,13 @@ const pipeNamedSubprocess = function (prefix, prcss, options) {
                     }, []);
                 }
             }
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i];
-                if (!verbose && isExtraneousLog(line))
-                    continue;
-                console.log(`[${prefix}] ${line}`);
+            if (!silent) {
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (!verbose && isExtraneousLog(line))
+                        continue;
+                    console.log(`[${prefix}] ${line}`);
+                }
             }
             if (!ready) {
                 if (data.includes(options.message) && options.readyEvent) {
@@ -169,11 +177,13 @@ const pipeNamedSubprocess = function (prefix, prcss, options) {
             }
         });
         prcss.stderr.on('data', function (data) {
+            if (!(data && data.toString))
+                return;
             // data is going to be a buffer at runtime
             data = data.toString();
-            if (!data)
+            if (!data.trim())
                 return;
-            const lines = data.split('\n');
+            const lines = data.split('\n').map(l => l.trim()).filter(l => l);
             for (let i = 0; i < lines.length; i++) {
                 const line = lines[i];
                 console.error(`[${prefix}] ${line}`);

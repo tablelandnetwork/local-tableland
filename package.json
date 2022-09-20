@@ -46,7 +46,6 @@
   },
   "type": "module",
   "dependencies": {
-    "chalk": "^5.0.1",
     "enquirer": "^2.3.6",
     "sentencer": "^0.2.1",
     "yargs": "^17.5.1"

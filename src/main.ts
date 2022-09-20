@@ -23,6 +23,7 @@ export class LocalTableland {
   validatorDir?: string;
   registryDir?: string;
   verbose?: boolean;
+  silent?: boolean;
 
   constructor(config: any) {
     this.config = config;
@@ -35,6 +36,7 @@ export class LocalTableland {
     this.validatorDir = this.validatorDir || await configGetter("Validator project directory", this.config, argv);
     this.registryDir = this.registryDir || await configGetter("Tableland registry contract project directory", this.config, argv);
     this.verbose = this.verbose || await configGetter("Should output a verbose log", this.config, argv);
+    this.silent = this.silent || await configGetter("Should silence logging", this.config, argv);
 
     await this.#_start();
   };
@@ -56,6 +58,10 @@ export class LocalTableland {
       cwd: this.registryDir,
     });
 
+    registry.on('error', (err) => {
+      throw new Error(`registry errored with: ${err}`);
+    });
+
     const registryReadyEvent = "hardhat ready";
     // this process should keep running until we kill it
     pipeNamedSubprocess(chalk.cyan.bold("Registry"), registry, {
@@ -64,7 +70,8 @@ export class LocalTableland {
       readyEvent: registryReadyEvent,
       emitter: this.initEmitter,
       message: "Mined empty block",
-      verbose: this.verbose
+      verbose: this.verbose,
+      silent: this.silent
     });
 
     // wait until initialization is done
@@ -110,6 +117,10 @@ export class LocalTableland {
       cwd: join(this.validatorDir, "docker")
     });
 
+    validator.on('error', (err) => {
+      throw new Error(`validator errored with: ${err}`);
+    });
+
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
     pipeNamedSubprocess(chalk.yellow.bold("Validator"), validator, {
@@ -119,6 +130,7 @@ export class LocalTableland {
       emitter: this.initEmitter,
       message: "processing height",
       verbose: this.verbose,
+      silent: this.silent,
       fails: {
         message: "Cannot connect to the Docker daemon",
         hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?"

@@ -1,7 +1,7 @@
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 
-// TODO: we need to build out a nice way to build a config object from
+// build a config object from
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
 //       3. a `tableland.config.js` file, which is either inside `process.pwd()` or specified
@@ -24,6 +24,11 @@ const configDescriptors = [
     env: "VERBOSE",
     file: "verbose",
     arg: "verbose"
+  }, {
+    name: "Should silence logging",
+    env: "SILENT",
+    file: "silent",
+    arg: "silent"
   }
 ];
 
@@ -97,6 +102,7 @@ export const pipeNamedSubprocess = async function (
   let ready = !(options && options.message);
   const fails = options?.fails;
   const verbose = options.verbose;
+  const silent = options.silent;
 
   prcss.stdout.on('data', function (data: string) {
     // data is going to be a buffer at runtime
@@ -119,11 +125,15 @@ export const pipeNamedSubprocess = async function (
         }, []);
       }
     }
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!verbose && isExtraneousLog(line)) continue;
-      console.log(`[${prefix}] ${line}`);
+
+    if (!silent) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!verbose && isExtraneousLog(line)) continue;
+        console.log(`[${prefix}] ${line}`);
+      }
     }
+
     if (!ready) {
       if (data.includes(options.message) && options.readyEvent) {
         options.emitter.emit(options.readyEvent);
@@ -133,11 +143,12 @@ export const pipeNamedSubprocess = async function (
   });
 
   prcss.stderr.on('data', function (data: string) {
+    if (!(data && data.toString)) return;
     // data is going to be a buffer at runtime
     data = data.toString();
-    if (!data) return;
+    if (!data.trim()) return;
 
-    const lines = data.split('\n');
+    const lines = data.split('\n').map(l => l.trim()).filter(l => l);
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       console.error(`[${prefix}] ${line}`);
