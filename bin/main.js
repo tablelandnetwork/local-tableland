@@ -35,11 +35,31 @@ export class LocalTableland {
     }
     ;
     ;
-    shutdown(noExit = false) {
+    async shutdown(noExit = false) {
+        await this.shutdownValidator();
+        await this.shutdownRegistry();
         __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
         if (noExit)
             return;
         process.exit();
+    }
+    ;
+    shutdownRegistry() {
+        return new Promise((resolve) => {
+            if (!this.registry)
+                return resolve();
+            this.registry.once('close', () => resolve());
+            this.registry.kill("SIGINT");
+        });
+    }
+    ;
+    shutdownValidator() {
+        return new Promise((resolve) => {
+            if (!this.validator)
+                return resolve();
+            this.validator.once('close', () => resolve());
+            this.validator.kill("SIGINT");
+        });
     }
     ;
     ;
@@ -49,21 +69,21 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
         // If these aren't specified then we want to open a terminal prompt that
         // will help the user setup their project directory then exit when finished
         await projectBuilder();
-        this.shutdown();
+        await this.shutdown();
         return;
     }
     // make sure we are starting fresh
     __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
     // Run a local hardhat node
-    const registry = spawn("npm", ["run", "up"], {
+    this.registry = spawn("npm", ["run", "up"], {
         cwd: this.registryDir,
     });
-    registry.on('error', (err) => {
+    this.registry.on('error', (err) => {
         throw new Error(`registry errored with: ${err}`);
     });
     const registryReadyEvent = "hardhat ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.cyan.bold("Registry"), registry, {
+    pipeNamedSubprocess(chalk.cyan.bold("Registry"), this.registry, {
         // use events to indicate when the underlying process is finished
         // initializing and is ready to participate in the Tableland network
         readyEvent: registryReadyEvent,
@@ -98,15 +118,15 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     validatorConfig.Chains[0].Registry.ContractAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
     writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
     // start the validator
-    const validator = spawn("make", ["local-up"], {
+    this.validator = spawn("make", ["local-up"], {
         cwd: join(this.validatorDir, "docker")
     });
-    validator.on('error', (err) => {
+    this.validator.on('error', (err) => {
         throw new Error(`validator errored with: ${err}`);
     });
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.yellow.bold("Validator"), validator, {
+    pipeNamedSubprocess(chalk.yellow.bold("Validator"), this.validator, {
         // use events to indicate when the underlying process is finished
         // initializing and is ready to participate in the Tableland network
         readyEvent: validatorReadyEvent,
@@ -121,6 +141,8 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     });
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);
+    if (this.silent)
+        return;
     console.log("\n\n******  Tableland is running!  ******");
     console.log("             _________");
     console.log("         ___/         \\");

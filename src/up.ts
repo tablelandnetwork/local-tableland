@@ -35,8 +35,8 @@ const go = async function () {
 
   // TODO: I think listening for SIGQUIT might break windows.
   //       Need to get access to a windows machine and test.
-  process.on("SIGINT", tableland.shutdown.bind(tableland));
-  process.on("SIGQUIT", tableland.shutdown.bind(tableland));
+  process.on("SIGINT", async () => await tableland.shutdown());
+  process.on("SIGQUIT", async () => await tableland.shutdown());
 
   await tableland.start(argv);
 };

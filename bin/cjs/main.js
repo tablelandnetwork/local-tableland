@@ -50,10 +50,32 @@ class LocalTableland {
     ;
     ;
     shutdown(noExit = false) {
-        __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
-        if (noExit)
-            return;
-        process.exit();
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.shutdownValidator();
+            yield this.shutdownRegistry();
+            __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
+            if (noExit)
+                return;
+            process.exit();
+        });
+    }
+    ;
+    shutdownRegistry() {
+        return new Promise((resolve) => {
+            if (!this.registry)
+                return resolve();
+            this.registry.once('close', () => resolve());
+            this.registry.kill("SIGINT");
+        });
+    }
+    ;
+    shutdownValidator() {
+        return new Promise((resolve) => {
+            if (!this.validator)
+                return resolve();
+            this.validator.once('close', () => resolve());
+            this.validator.kill("SIGINT");
+        });
     }
     ;
     ;
@@ -65,21 +87,21 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
             // If these aren't specified then we want to open a terminal prompt that
             // will help the user setup their project directory then exit when finished
             yield (0, project_builder_js_1.projectBuilder)();
-            this.shutdown();
+            yield this.shutdown();
             return;
         }
         // make sure we are starting fresh
         __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
         // Run a local hardhat node
-        const registry = (0, node_child_process_1.spawn)("npm", ["run", "up"], {
+        this.registry = (0, node_child_process_1.spawn)("npm", ["run", "up"], {
             cwd: this.registryDir,
         });
-        registry.on('error', (err) => {
+        this.registry.on('error', (err) => {
             throw new Error(`registry errored with: ${err}`);
         });
         const registryReadyEvent = "hardhat ready";
         // this process should keep running until we kill it
-        (0, util_js_1.pipeNamedSubprocess)(chalk_js_1.chalk.cyan.bold("Registry"), registry, {
+        (0, util_js_1.pipeNamedSubprocess)(chalk_js_1.chalk.cyan.bold("Registry"), this.registry, {
             // use events to indicate when the underlying process is finished
             // initializing and is ready to participate in the Tableland network
             readyEvent: registryReadyEvent,
@@ -114,15 +136,15 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
         validatorConfig.Chains[0].Registry.ContractAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
         (0, node_fs_1.writeFileSync)(configFilePath, JSON.stringify(validatorConfig, null, 2));
         // start the validator
-        const validator = (0, node_child_process_1.spawn)("make", ["local-up"], {
+        this.validator = (0, node_child_process_1.spawn)("make", ["local-up"], {
             cwd: (0, node_path_1.join)(this.validatorDir, "docker")
         });
-        validator.on('error', (err) => {
+        this.validator.on('error', (err) => {
             throw new Error(`validator errored with: ${err}`);
         });
         const validatorReadyEvent = "validator ready";
         // this process should keep running until we kill it
-        (0, util_js_1.pipeNamedSubprocess)(chalk_js_1.chalk.yellow.bold("Validator"), validator, {
+        (0, util_js_1.pipeNamedSubprocess)(chalk_js_1.chalk.yellow.bold("Validator"), this.validator, {
             // use events to indicate when the underlying process is finished
             // initializing and is ready to participate in the Tableland network
             readyEvent: validatorReadyEvent,
@@ -137,6 +159,8 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _Lo
         });
         // wait until initialization is done
         yield (0, util_js_1.waitForReady)(validatorReadyEvent, this.initEmitter);
+        if (this.silent)
+            return;
         console.log("\n\n******  Tableland is running!  ******");
         console.log("             _________");
         console.log("         ___/         \\");

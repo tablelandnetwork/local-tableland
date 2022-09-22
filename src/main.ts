@@ -2,7 +2,7 @@
  *  Run end to end Tableland
  **/
 
-import { spawn, spawnSync } from "node:child_process";
+import { spawn, spawnSync, ChildProcess } from "node:child_process";
 import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -19,6 +19,8 @@ let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 export class LocalTableland {
   config;
   initEmitter;
+  registry?: ChildProcess;
+  validator?: ChildProcess;
 
   validatorDir?: string;
   registryDir?: string;
@@ -46,7 +48,7 @@ export class LocalTableland {
       // If these aren't specified then we want to open a terminal prompt that
       // will help the user setup their project directory then exit when finished
       await projectBuilder();
-      this.shutdown();
+      await this.shutdown();
       return;
     }
 
@@ -54,17 +56,17 @@ export class LocalTableland {
     this.#_cleanup();
 
     // Run a local hardhat node
-    const registry = spawn("npm", ["run", "up"], {
+    this.registry = spawn("npm", ["run", "up"], {
       cwd: this.registryDir,
     });
 
-    registry.on('error', (err) => {
+    this.registry.on('error', (err) => {
       throw new Error(`registry errored with: ${err}`);
     });
 
     const registryReadyEvent = "hardhat ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.cyan.bold("Registry"), registry, {
+    pipeNamedSubprocess(chalk.cyan.bold("Registry"), this.registry, {
       // use events to indicate when the underlying process is finished
       // initializing and is ready to participate in the Tableland network
       readyEvent: registryReadyEvent,
@@ -113,17 +115,17 @@ export class LocalTableland {
     );
 
     // start the validator
-    const validator = spawn("make", ["local-up"], {
+    this.validator = spawn("make", ["local-up"], {
       cwd: join(this.validatorDir, "docker")
     });
 
-    validator.on('error', (err) => {
+    this.validator.on('error', (err) => {
       throw new Error(`validator errored with: ${err}`);
     });
 
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.yellow.bold("Validator"), validator, {
+    pipeNamedSubprocess(chalk.yellow.bold("Validator"), this.validator, {
       // use events to indicate when the underlying process is finished
       // initializing and is ready to participate in the Tableland network
       readyEvent: validatorReadyEvent,
@@ -140,6 +142,8 @@ export class LocalTableland {
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);
 
+    if (this.silent) return;
+
     console.log("\n\n******  Tableland is running!  ******");
     console.log("             _________");
     console.log("         ___/         \\");
@@ -148,10 +152,31 @@ export class LocalTableland {
     console.log("______/                  \\______\n\n");
   };
 
-  shutdown(noExit: boolean = false) {
+  async shutdown(noExit: boolean = false) {
+    await this.shutdownValidator();
+    await this.shutdownRegistry();
+
     this.#_cleanup();
     if (noExit) return;
     process.exit();
+  };
+
+  shutdownRegistry(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.registry) return resolve();
+
+      this.registry.once('close', () => resolve());
+      this.registry.kill("SIGINT");
+    });
+  };
+
+  shutdownValidator(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.validator) return resolve();
+
+      this.validator.once('close', () => resolve());
+      this.validator.kill("SIGINT");
+    });
   };
 
   // cleanup should restore everything to the starting state.
@@ -191,6 +216,5 @@ export class LocalTableland {
         ORIGINAL_VALIDATOR_CONFIG
       );
     }
-
   };
 };
