@@ -48,8 +48,12 @@ export class LocalTableland {
         return new Promise((resolve) => {
             if (!this.registry)
                 return resolve();
-            this.registry.once('close', () => resolve());
-            this.registry.kill("SIGINT");
+            this.registry.once("close", () => resolve());
+            // If this Class is imported and run by a test runner then the ChildProcess instances are
+            // sub-processes of a ChildProcess instance which means in order to kill them in a way that
+            // enables graceful shut down they have to run in detached mode and be killed by the pid
+            // @ts-ignore
+            process.kill(-this.registry.pid);
         });
     }
     ;
@@ -57,8 +61,12 @@ export class LocalTableland {
         return new Promise((resolve) => {
             if (!this.validator)
                 return resolve();
-            this.validator.once('close', () => resolve());
-            this.validator.kill("SIGINT");
+            this.validator.on("close", () => resolve());
+            // If this Class is imported and run by a test runner then the ChildProcess instances are
+            // sub-processes of a ChildProcess instance which means in order to kill them in a way that
+            // enables graceful shut down they have to run in detached mode and be killed by the pid
+            // @ts-ignore
+            process.kill(-this.validator.pid);
         });
     }
     ;
@@ -76,6 +84,7 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
     // Run a local hardhat node
     this.registry = spawn("npm", ["run", "up"], {
+        detached: true,
         cwd: this.registryDir,
     });
     this.registry.on('error', (err) => {
@@ -119,6 +128,7 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
     // start the validator
     this.validator = spawn("make", ["local-up"], {
+        detached: true,
         cwd: join(this.validatorDir, "docker")
     });
     this.validator.on('error', (err) => {
