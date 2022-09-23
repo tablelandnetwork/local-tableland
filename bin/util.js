@@ -33,12 +33,12 @@ const configDescriptors = [
         isPath: false
     }
 ];
-export const buildConfig = function (configFile, argv) {
+export const buildConfig = function (config) {
     const configObject = {};
     for (let i = 0; i < configDescriptors.length; i++) {
         const configDescriptor = configDescriptors[i];
-        const file = configFile[configDescriptor.file];
-        const arg = argv[configDescriptor.arg];
+        const file = config[configDescriptor.file];
+        const arg = config[configDescriptor.arg];
         const env = process.env[configDescriptor.env];
         let val;
         // priority is: command argument, then environment variable, then config file

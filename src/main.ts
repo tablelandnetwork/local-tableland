@@ -7,8 +7,13 @@ import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
-import { buildConfig, Config, pipeNamedSubprocess, waitForReady } from "./util.js"
-import { projectBuilder } from "./project-builder.js";
+import {
+  buildConfig,
+  getConfigFile,
+  Config,
+  pipeNamedSubprocess,
+  waitForReady
+} from "./util.js"
 
 
 // TODO: should this be a per instance value?
@@ -26,15 +31,16 @@ export class LocalTableland {
   verbose?: boolean;
   silent?: boolean;
 
-  constructor(config: Config = {}) {
-    this.config = config;
+  constructor(configParams: Config = {}) {
+    this.config = configParams;
 
     // an emitter to help with init logic across the multiple sub-processes
     this.initEmitter = new EventEmitter();
   };
 
-  async start(argv: Config = {}) {
-    const config = buildConfig(this.config, argv);
+  async start() {
+    const configFile = await getConfigFile();
+    const config = buildConfig({ ...configFile, ...this.config });
     if (typeof config.validatorDir === "string") this.validatorDir = config.validatorDir;
     if (typeof config.registryDir === "string") this.registryDir = config.registryDir;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
@@ -45,11 +51,7 @@ export class LocalTableland {
 
   async #_start() {
     if (!(this.validatorDir && this.registryDir)) {
-      // If these aren't specified then we want to open a terminal prompt that
-      // will help the user setup their project directory then exit when finished
-      await projectBuilder();
-      await this.shutdown();
-      return;
+      throw new Error("cannot start a local network without Validator and Registry");
     }
 
     // make sure we are starting fresh

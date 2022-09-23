@@ -12,21 +12,21 @@ import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
-import { buildConfig, pipeNamedSubprocess, waitForReady } from "./util.js";
-import { projectBuilder } from "./project-builder.js";
+import { buildConfig, getConfigFile, pipeNamedSubprocess, waitForReady } from "./util.js";
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
 export class LocalTableland {
-    constructor(config = {}) {
+    constructor(configParams = {}) {
         _LocalTableland_instances.add(this);
-        this.config = config;
+        this.config = configParams;
         // an emitter to help with init logic across the multiple sub-processes
         this.initEmitter = new EventEmitter();
     }
     ;
-    async start(argv = {}) {
-        const config = buildConfig(this.config, argv);
+    async start() {
+        const configFile = await getConfigFile();
+        const config = buildConfig(Object.assign(Object.assign({}, configFile), this.config));
         if (typeof config.validatorDir === "string")
             this.validatorDir = config.validatorDir;
         if (typeof config.registryDir === "string")
@@ -78,11 +78,7 @@ export class LocalTableland {
 }
 _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async function _LocalTableland__start() {
     if (!(this.validatorDir && this.registryDir)) {
-        // If these aren't specified then we want to open a terminal prompt that
-        // will help the user setup their project directory then exit when finished
-        await projectBuilder();
-        await this.shutdown();
-        return;
+        throw new Error("cannot start a local network without Validator and Registry");
     }
     // make sure we are starting fresh
     __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);

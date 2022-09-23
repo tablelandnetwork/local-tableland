@@ -53,13 +53,13 @@ export type Config = {
   silent?: boolean;
 };
 
-export const buildConfig = function (configFile: Config, argv: Config) {
+export const buildConfig = function (config: Config) {
   const configObject: { [x: string]: string | boolean | undefined } = {};
   for (let i = 0; i < configDescriptors.length; i++) {
     const configDescriptor = configDescriptors[i];
 
-    const file = configFile[configDescriptor.file];
-    const arg = argv[configDescriptor.arg];
+    const file = config[configDescriptor.file];
+    const arg = config[configDescriptor.arg];
     const env = process.env[configDescriptor.env];
 
     let val: string | boolean | undefined;

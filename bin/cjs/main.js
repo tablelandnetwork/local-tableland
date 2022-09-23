@@ -25,21 +25,21 @@ const node_events_1 = require("node:events");
 const node_fs_1 = require("node:fs");
 const chalk_js_1 = require("./chalk.js");
 const util_js_1 = require("./util.js");
-const project_builder_js_1 = require("./project-builder.js");
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
 class LocalTableland {
-    constructor(config = {}) {
+    constructor(configParams = {}) {
         _LocalTableland_instances.add(this);
-        this.config = config;
+        this.config = configParams;
         // an emitter to help with init logic across the multiple sub-processes
         this.initEmitter = new node_events_1.EventEmitter();
     }
     ;
-    start(argv = {}) {
+    start() {
         return __awaiter(this, void 0, void 0, function* () {
-            const config = (0, util_js_1.buildConfig)(this.config, argv);
+            const configFile = yield (0, util_js_1.getConfigFile)();
+            const config = (0, util_js_1.buildConfig)(Object.assign(Object.assign({}, configFile), this.config));
             if (typeof config.validatorDir === "string")
                 this.validatorDir = config.validatorDir;
             if (typeof config.registryDir === "string")
@@ -96,11 +96,7 @@ exports.LocalTableland = LocalTableland;
 _LocalTableland_instances = new WeakSet(), _LocalTableland__start = function _LocalTableland__start() {
     return __awaiter(this, void 0, void 0, function* () {
         if (!(this.validatorDir && this.registryDir)) {
-            // If these aren't specified then we want to open a terminal prompt that
-            // will help the user setup their project directory then exit when finished
-            yield (0, project_builder_js_1.projectBuilder)();
-            yield this.shutdown();
-            return;
+            throw new Error("cannot start a local network without Validator and Registry");
         }
         // make sure we are starting fresh
         __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);

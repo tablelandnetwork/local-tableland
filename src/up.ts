@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 
-import { LocalTableland } from "./main.js";
-import { getConfigFile } from "./util.js";
 import yargs from "yargs/yargs";
 import { hideBin } from "yargs/helpers";
+import { LocalTableland } from "./main.js";
+import { getConfigFile } from "./util.js";
+import { projectBuilder } from "./project-builder.js";
 
 const argv = yargs(hideBin(process.argv)).options({
   validator: {
@@ -35,27 +36,39 @@ const argv = yargs(hideBin(process.argv)).options({
 }).argv;
 
 const go = async function () {
-  const config = await getConfigFile();
-  const tableland = new LocalTableland(config);
+  // using these argv ts ignores for the reasons explained in the yargs readme.
+  // https://github.com/yargs/yargs/blob/main/docs/typescript.md#typescript-usage-examples
+  // TODO: try `parseSync`
+
+  // @ts-ignore
+  const argvValidator = argv.validator;
+  // @ts-ignore
+  const argvRegistry = argv.registry;
+  const configFile = await getConfigFile();
+  const hasValidatorDir = configFile.validatorDir || argvValidator;
+  const hasRegistryDir = configFile.registryDir || argvRegistry;
+  if (!(hasValidatorDir && hasRegistryDir)) {
+    // If these aren't specified then we want to open a terminal prompt that
+    // will help the user setup their project directory then exit when finished
+    await projectBuilder();
+    return;
+  }
+
+  const tableland = new LocalTableland({
+    validator: argvValidator,
+    registry: argvRegistry,
+    // @ts-ignore
+    verbose: argv.verbose,
+    // @ts-ignore
+    silent: argv.silent
+  });
 
   // TODO: I think listening for SIGQUIT might break windows.
   //       Need to get access to a windows machine and test.
   process.on("SIGINT", async () => await tableland.shutdown());
   process.on("SIGQUIT", async () => await tableland.shutdown());
 
-  await tableland.start({
-    // using these ts ignores for the reasons explained in the yargs readme.
-    // https://github.com/yargs/yargs/blob/main/docs/typescript.md#typescript-usage-examples
-    // TODO: try `parseSync`
-    // @ts-ignore
-    validator: argv.validator,
-    // @ts-ignore
-    registry: argv.registry,
-    // @ts-ignore
-    verbose: argv.verbose,
-    // @ts-ignore
-    silent: argv.silent
-  });
+  await tableland.start();
 };
 
 

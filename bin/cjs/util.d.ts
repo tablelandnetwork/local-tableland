@@ -16,7 +16,7 @@ export declare type Config = {
     verbose?: boolean;
     silent?: boolean;
 };
-export declare const buildConfig: (configFile: Config, argv: Config) => {
+export declare const buildConfig: (config: Config) => {
     [x: string]: string | boolean | undefined;
 };
 export declare const getConfigFile: () => Promise<any>;
