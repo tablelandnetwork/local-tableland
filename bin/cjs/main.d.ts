@@ -18,7 +18,7 @@ declare class LocalTableland {
     silent?: boolean;
     constructor(configParams?: Config);
     start(): Promise<void>;
-    shutdown(noExit?: boolean): Promise<void>;
+    shutdown(): Promise<void>;
     shutdownRegistry(): Promise<void>;
     shutdownValidator(): Promise<void>;
 }

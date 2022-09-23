@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
-import { buildConfig, getConfigFile, pipeNamedSubprocess, waitForReady, getAccounts } from "./util.js";
+import { buildConfig, getConfigFile, pipeNamedSubprocess, waitForReady, getAccounts, } from "./util.js";
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
@@ -23,7 +23,6 @@ class LocalTableland {
         // an emitter to help with init logic across the multiple sub-processes
         this.initEmitter = new EventEmitter();
     }
-    ;
     async start() {
         const configFile = await getConfigFile();
         const config = buildConfig(Object.assign(Object.assign({}, configFile), this.config));
@@ -37,17 +36,11 @@ class LocalTableland {
             this.silent = config.silent;
         await __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__start).call(this);
     }
-    ;
-    ;
-    async shutdown(noExit = false) {
+    async shutdown() {
         await this.shutdownValidator();
         await this.shutdownRegistry();
         __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__cleanup).call(this);
-        if (noExit)
-            return;
-        process.exit();
     }
-    ;
     shutdownRegistry() {
         return new Promise((resolve) => {
             if (!this.registry)
@@ -60,7 +53,6 @@ class LocalTableland {
             process.kill(-this.registry.pid);
         });
     }
-    ;
     shutdownValidator() {
         return new Promise((resolve) => {
             if (!this.validator)
@@ -73,8 +65,6 @@ class LocalTableland {
             process.kill(-this.validator.pid);
         });
     }
-    ;
-    ;
 }
 _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async function _LocalTableland__start() {
     if (!(this.validatorDir && this.registryDir)) {
@@ -87,7 +77,7 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
         detached: true,
         cwd: this.registryDir,
     });
-    this.registry.on('error', (err) => {
+    this.registry.on("error", (err) => {
         throw new Error(`registry errored with: ${err}`);
     });
     const registryReadyEvent = "hardhat ready";
@@ -99,19 +89,13 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
         emitter: this.initEmitter,
         message: "Mined empty block",
         verbose: this.verbose,
-        silent: this.silent
+        silent: this.silent,
     });
     // wait until initialization is done
     await waitForReady(registryReadyEvent, this.initEmitter);
     // Deploy the Registry to the Hardhat node
-    spawnSync("npx", [
-        "hardhat",
-        "run",
-        "--network",
-        "localhost",
-        "scripts/deploy.ts",
-    ], {
-        cwd: this.registryDir
+    spawnSync("npx", ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"], {
+        cwd: this.registryDir,
     });
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance
@@ -124,14 +108,15 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
     // TODO: this could be parsed out of the deploy process, but since
     //       it's always the same address just hardcoding it here
-    validatorConfig.Chains[0].Registry.ContractAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+    validatorConfig.Chains[0].Registry.ContractAddress =
+        "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
     writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
     // start the validator
     this.validator = spawn("make", ["local-up"], {
         detached: true,
-        cwd: join(this.validatorDir, "docker")
+        cwd: join(this.validatorDir, "docker"),
     });
-    this.validator.on('error', (err) => {
+    this.validator.on("error", (err) => {
         throw new Error(`validator errored with: ${err}`);
     });
     const validatorReadyEvent = "validator ready";
@@ -146,8 +131,8 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
         silent: this.silent,
         fails: {
             message: "Cannot connect to the Docker daemon",
-            hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?"
-        }
+            hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?",
+        },
     });
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);
@@ -187,6 +172,5 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
         writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
     }
 };
-;
 export { LocalTableland, getAccounts };
 //# sourceMappingURL=main.js.map

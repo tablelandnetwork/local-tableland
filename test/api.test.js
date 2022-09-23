@@ -1,14 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { jest } from "@jest/globals";
 import path from "path";
 import {
   testRpcResponse,
   testHttpResponse,
   getTableland,
   loadSpecTestData,
-  getAccounts,
 } from "./utils";
+import { getAccounts } from "../src/utils";
 
 const __dirname = path.resolve(path.dirname(""));
 // TODO: we were using these tests to check the validator's OAS spec via
@@ -38,24 +37,37 @@ describe("Validator gateway server", function () {
     const tableland1 = await getTableland(signer1);
 
     const prefix = "test_transaction";
-    const { txnHash, tableId } = await tableland1.create("keyy TEXT, val TEXT", { prefix });
+    const { txnHash, tableId } = await tableland1.create(
+      "keyy TEXT, val TEXT",
+      { prefix }
+    );
 
     const chainId = 31337;
 
-    const data = await tableland1.read(`SELECT * FROM ${prefix}_${chainId}_${tableId};`);
+    const data = await tableland1.read(
+      `SELECT * FROM ${prefix}_${chainId}_${tableId};`
+    );
     await expect(data.rows).toEqual([]);
 
-    const { tableId: tableId2 } = await tableland1.create("a INT PRIMARY KEY, CHECK (a > 0)", {
-      prefix: "test_schema_route"
-    });
+    const { tableId: tableId2 } = await tableland1.create(
+      "a INT PRIMARY KEY, CHECK (a > 0)",
+      {
+        prefix: "test_schema_route",
+      }
+    );
     schemaTableId = tableId2.toString();
 
-    const { tableId: tableId3 } = await tableland0.create("a INT PRIMARY KEY, CHECK (a > 0)", {
-      prefix: "test_setcontroller"
-    });
+    const { tableId: tableId3 } = await tableland0.create(
+      "a INT PRIMARY KEY, CHECK (a > 0)",
+      {
+        prefix: "test_setcontroller",
+      }
+    );
     controllerTableId = tableId3.toString();
 
-    const { structureHash } = await tableland1.hash("a INT PRIMARY KEY", { prefix: "test_schema_route" });
+    const { structureHash } = await tableland1.hash("a INT PRIMARY KEY", {
+      prefix: "test_schema_route",
+    });
     tableHash = structureHash;
 
     // We need the token and a transaction hash for a transaction on the Hardhat chain,
@@ -64,7 +76,9 @@ describe("Validator gateway server", function () {
     transactionHash = txnHash;
   });
 
-  const tests = loadSpecTestData(path.join(__dirname, "tmp", "tableland-openapi-spec.yaml"));
+  const tests = loadSpecTestData(
+    path.join(__dirname, "tmp", "tableland-openapi-spec.yaml")
+  );
 
   test.each(tests)("$name", async function (_test) {
     const payload = {
@@ -72,7 +86,7 @@ describe("Validator gateway server", function () {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
-      }
+      },
     };
 
     const routeTemplateData = {
@@ -81,7 +95,7 @@ describe("Validator gateway server", function () {
       address: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", // Hardhat #1
       readStatement: "SELECT * FROM healthbot_31337_1",
       tableName: `test_schema_route_31337_${schemaTableId}`,
-      hash: tableHash
+      hash: tableHash,
     };
 
     // Cannot have a body on a GET/HEAD request
@@ -96,12 +110,12 @@ describe("Validator gateway server", function () {
       payload.body = JSON.stringify(_test.body);
     }
 
-    const route = _test.route(routeTemplateData)
+    const route = _test.route(routeTemplateData);
     const res = await fetch(`${_test.host}${route}`, payload);
 
     expect(typeof _test.response).not.toEqual("undefined");
 
     if (route === "/rpc") return await testRpcResponse(res, _test);
-    await testHttpResponse(res, _test.response)
+    await testHttpResponse(res, _test.response);
   });
 });

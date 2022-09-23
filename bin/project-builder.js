@@ -10,13 +10,13 @@ export const projectBuilder = async function () {
     const choices = [
         "No, I don't want to create a project right now",
         "Yes, and I want to control everything each step of the way",
-        "Yes, but setup everything for me and stop asking me questions"
+        "Yes, but setup everything for me and stop asking me questions",
     ];
     // @ts-ignore https://github.com/enquirer/enquirer/issues/379
     const select = new prompt.Select({
         name: "wtd",
         message: "Couldn't find an existing Tableland project, do you want to create a new project?",
-        choices: [...choices]
+        choices: [...choices],
     });
     const shouldCreate = await select.run();
     if (shouldCreate === choices[0]) {
@@ -56,7 +56,7 @@ export const projectBuilder = async function () {
         else {
             console.log(chalk.yellow("Cloning the Validator repository."));
             spawnSync("git", ["clone", "git@github.com:tablelandnetwork/go-tableland.git"], {
-                cwd: "tableland-artifacts"
+                cwd: "tableland-artifacts",
             });
         }
         let gitCloneEvm = true;
@@ -75,7 +75,7 @@ export const projectBuilder = async function () {
             console.log(chalk.yellow("Cloning the Registry repository."));
             // clone the validator
             spawnSync("git", ["clone", "git@github.com:tablelandnetwork/evm-tableland.git"], {
-                cwd: "tableland-artifacts"
+                cwd: "tableland-artifacts",
             });
         }
     }

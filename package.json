@@ -31,7 +31,7 @@
   ],
   "scripts": {
     "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
-    "lint": "eslint up.ts test/ --ext .js,.jsx,.ts,.tsx",
+    "lint": "eslint src/ test/ --ext .js,.jsx,.ts,.tsx",
     "prepublishOnly": "npm run build",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
     "prettier:fix": "npm run prettier -- --write",

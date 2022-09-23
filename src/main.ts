@@ -13,9 +13,8 @@ import {
   Config,
   pipeNamedSubprocess,
   waitForReady,
-  getAccounts
-} from "./util.js"
-
+  getAccounts,
+} from "./util.js";
 
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
@@ -37,23 +36,27 @@ class LocalTableland {
 
     // an emitter to help with init logic across the multiple sub-processes
     this.initEmitter = new EventEmitter();
-  };
+  }
 
   async start() {
     const configFile = await getConfigFile();
     const config = buildConfig({ ...configFile, ...this.config });
 
-    if (typeof config.validatorDir === "string") this.validatorDir = config.validatorDir;
-    if (typeof config.registryDir === "string") this.registryDir = config.registryDir;
+    if (typeof config.validatorDir === "string")
+      this.validatorDir = config.validatorDir;
+    if (typeof config.registryDir === "string")
+      this.registryDir = config.registryDir;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
 
     await this.#_start();
-  };
+  }
 
   async #_start() {
     if (!(this.validatorDir && this.registryDir)) {
-      throw new Error("cannot start a local network without Validator and Registry");
+      throw new Error(
+        "cannot start a local network without Validator and Registry"
+      );
     }
 
     // make sure we are starting fresh
@@ -65,7 +68,7 @@ class LocalTableland {
       cwd: this.registryDir,
     });
 
-    this.registry.on('error', (err) => {
+    this.registry.on("error", (err) => {
       throw new Error(`registry errored with: ${err}`);
     });
 
@@ -78,22 +81,20 @@ class LocalTableland {
       emitter: this.initEmitter,
       message: "Mined empty block",
       verbose: this.verbose,
-      silent: this.silent
+      silent: this.silent,
     });
 
     // wait until initialization is done
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     // Deploy the Registry to the Hardhat node
-    spawnSync("npx", [
-      "hardhat",
-      "run",
-      "--network",
-      "localhost",
-      "scripts/deploy.ts",
-    ], {
-      cwd: this.registryDir
-    });
+    spawnSync(
+      "npx",
+      ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+      {
+        cwd: this.registryDir,
+      }
+    );
 
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance
@@ -103,29 +104,30 @@ class LocalTableland {
     );
 
     // Add the registry address to the Validator config
-    const configFilePath = join(this.validatorDir, "/docker/local/api/config.json");
+    const configFilePath = join(
+      this.validatorDir,
+      "/docker/local/api/config.json"
+    );
     const configFileStr = readFileSync(configFilePath).toString();
     const validatorConfig = JSON.parse(configFileStr);
 
     // save the validator config state before this script modifies it
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2)
+    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
 
     // TODO: this could be parsed out of the deploy process, but since
     //       it's always the same address just hardcoding it here
-    validatorConfig.Chains[0].Registry.ContractAddress = "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+    validatorConfig.Chains[0].Registry.ContractAddress =
+      "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
 
-    writeFileSync(
-      configFilePath,
-      JSON.stringify(validatorConfig, null, 2)
-    );
+    writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
 
     // start the validator
     this.validator = spawn("make", ["local-up"], {
       detached: true,
-      cwd: join(this.validatorDir, "docker")
+      cwd: join(this.validatorDir, "docker"),
     });
 
-    this.validator.on('error', (err) => {
+    this.validator.on("error", (err) => {
       throw new Error(`validator errored with: ${err}`);
     });
 
@@ -141,8 +143,8 @@ class LocalTableland {
       silent: this.silent,
       fails: {
         message: "Cannot connect to the Docker daemon",
-        hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?"
-      }
+        hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?",
+      },
     });
 
     // wait until initialization is done
@@ -156,15 +158,13 @@ class LocalTableland {
     console.log("        /              \\");
     console.log("       /                \\");
     console.log("______/                  \\______\n\n");
-  };
+  }
 
-  async shutdown(noExit: boolean = false) {
+  async shutdown() {
     await this.shutdownValidator();
     await this.shutdownRegistry();
     this.#_cleanup();
-    if (noExit) return;
-    process.exit();
-  };
+  }
 
   shutdownRegistry(): Promise<void> {
     return new Promise((resolve) => {
@@ -177,7 +177,7 @@ class LocalTableland {
       // @ts-ignore
       process.kill(-this.registry.pid);
     });
-  };
+  }
 
   shutdownValidator(): Promise<void> {
     return new Promise((resolve) => {
@@ -190,7 +190,7 @@ class LocalTableland {
       // @ts-ignore
       process.kill(-this.validator.pid);
     });
-  };
+  }
 
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
@@ -223,13 +223,13 @@ class LocalTableland {
 
     // reset the Validator config file that is modified on startup
     if (ORIGINAL_VALIDATOR_CONFIG) {
-      const configFilePath = join(this.validatorDir, "/docker/local/api/config.json");
-      writeFileSync(
-        configFilePath,
-        ORIGINAL_VALIDATOR_CONFIG
+      const configFilePath = join(
+        this.validatorDir,
+        "/docker/local/api/config.json"
       );
+      writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
     }
-  };
-};
+  }
+}
 
 export { LocalTableland, getAccounts };

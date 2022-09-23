@@ -2,9 +2,7 @@
   "compilerOptions": {
     "target": "es2015",
     "outDir": "./bin/cjs/",
-    "lib": [
-      "ES6"
-    ],
+    "lib": ["ES6"],
     "isolatedModules": true,
     "module": "commonjs",
     "moduleResolution": "node",

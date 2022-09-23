@@ -1,15 +1,8 @@
 import { spawnSync } from "node:child_process";
 import { join } from "node:path";
-import { providers } from "ethers";
-import { jest } from "@jest/globals";
 import path from "path";
-import {
-  testRpcResponse,
-  testHttpResponse,
-  getTableland,
-  loadSpecTestData,
-  getAccounts,
-} from "./utils";
+import { getTableland } from "./utils";
+import { getAccounts } from "../src/utils";
 
 const __dirname = path.resolve(path.dirname(""));
 // TODO: we were using these tests to check the validator's OAS spec via
@@ -20,7 +13,6 @@ spawnSync("cp", [
   join(__dirname, "../go-tableland", "tableland-openapi-spec.yaml"),
   "./tmp",
 ]);
-
 
 // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
 jest.setTimeout(25000);
@@ -35,7 +27,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const prefix = "test_create_read";
     // `key` is a reserved word in sqlite
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -53,7 +45,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_create_write";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -75,7 +67,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const tableland = await getTableland(signer);
 
     const prefix = "test_not_allowed";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", { prefix });
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix,
+    });
 
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -85,9 +79,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const signer2 = accounts[2];
     const tableland2 = await getTableland(signer2);
-    
+
     await expect(async function () {
-      await tableland2.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+      await tableland2.write(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      );
     }).rejects.toThrow(
       "db query execution failed (code: ACL, msg: not enough privileges)"
     );
@@ -102,23 +98,31 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const tableland = await getTableland(signer);
 
     const prefix = "test_create_delete";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", { prefix });
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix,
+    });
 
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    const write1 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+    const write1 = await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
 
     expect(typeof write1.hash).toEqual("string");
 
-    const write2 = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`);
+    const write2 = await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+    );
 
     expect(typeof write2.hash).toEqual("string");
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`);
     await expect(data.rows.length).toEqual(2);
 
-    const delete1 = await tableland.write(`DELETE FROM ${queryableName} WHERE val = 'pine';`);
+    const delete1 = await tableland.write(
+      `DELETE FROM ${queryableName} WHERE val = 'pine';`
+    );
 
     expect(typeof delete1.hash).toEqual("string");
 
@@ -133,7 +137,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -144,10 +148,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      output: "table"
+      output: "table",
     });
 
-    await expect(data.columns).toEqual([{name: "keyy"}, {name: "val"}]);
+    await expect(data.columns).toEqual([{ name: "keyy" }, { name: "val" }]);
     await expect(data.rows).toEqual([["tree", "aspen"]]);
   });
 
@@ -158,7 +162,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -169,10 +173,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
     );
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
-      output: "objects"
+      output: "objects",
     });
 
-    await expect(data).toEqual([{"keyy": "tree", "val": "aspen"}]);
+    await expect(data).toEqual([{ keyy: "tree", val: "aspen" }]);
   });
 
   test("Read a single row with `unwrap` option", async function () {
@@ -182,7 +186,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -194,10 +198,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
       unwrap: true,
-      output: "objects"
+      output: "objects",
     });
 
-    expect(data).toEqual({"keyy": "tree", "val": "aspen"});
+    expect(data).toEqual({ keyy: "tree", val: "aspen" });
   });
 
   test("Read two rows with `unwrap` option fails", async function () {
@@ -207,7 +211,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -223,7 +227,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     await expect(async function () {
       await tableland.read(`SELECT * FROM ${queryableName};`, {
         unwrap: true,
-        output: "objects"
+        output: "objects",
       });
     }).rejects.toThrow(
       "unwrapped results with more than one row aren't supported in JSON RPC API"
@@ -237,7 +241,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_read_extract";
     const { tableId } = await tableland.create("val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -246,13 +250,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
     await tableland.write(
       `INSERT INTO ${queryableName} (val) VALUES ('aspen')`
     );
-    await tableland.write(
-      `INSERT INTO ${queryableName} (val) VALUES ('pine')`
-    );
+    await tableland.write(`INSERT INTO ${queryableName} (val) VALUES ('pine')`);
 
     const data = await tableland.read(`SELECT * FROM ${queryableName};`, {
       extract: true,
-      output: "objects"
+      output: "objects",
     });
 
     await expect(data).toEqual(["aspen", "pine"]);
@@ -265,7 +267,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
     const prefix = "test_read";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
-      prefix
+      prefix,
     });
 
     const chainId = 31337;
@@ -278,7 +280,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     await expect(async function () {
       await tableland.read(`SELECT * FROM ${queryableName};`, {
         extract: true,
-        output: "objects"
+        output: "objects",
       });
     }).rejects.toThrow(
       "can only extract values for result sets with one column but this has 2"
@@ -291,7 +293,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const tableland = await getTableland(signer);
 
     const prefix = "test_create_list";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", { prefix });
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix,
+    });
 
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -299,7 +303,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const tablesMeta = await tableland.list();
 
     await expect(Array.isArray(tablesMeta)).toEqual(true);
-    const table = tablesMeta.find(table => table.name === queryableName);
+    const table = tablesMeta.find((table) => table.name === queryableName);
 
     await expect(table).toBeDefined();
     await expect(table.controller).toEqual(accounts[1].address);
@@ -308,15 +312,19 @@ describe("Validator, Chain, and SDK work end to end", function () {
   test("write to a table without using the relay", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, {rpcRelay: false});
+    const tableland = await getTableland(signer, { rpcRelay: false });
 
     const prefix = "test_direct_write";
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", { prefix });
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix,
+    });
 
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    const writeRes = await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+    const writeRes = await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
 
     expect(typeof writeRes.hash).toEqual("string");
 
@@ -327,20 +335,24 @@ describe("Validator, Chain, and SDK work end to end", function () {
   test("write without relay statement validates table name prefix", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, {rpcRelay: false});
+    const tableland = await getTableland(signer, { rpcRelay: false });
 
     const prefix = "test_direct_invalid_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
 
-    const prefix2 = "test_direct_invalid_write2"
-    const { tableId } = await tableland.create("keyy TEXT, val TEXT", { prefix: prefix2 });
+    const prefix2 = "test_direct_invalid_write2";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix: prefix2,
+    });
 
     // both tables owned by the same account
     // the prefix is for the first table, but id is for second table
     const queryableName = `${prefix}_31337_${tableId}`;
 
     await expect(async function () {
-      await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+      await tableland.write(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      );
     }).rejects.toThrow(
       `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
     );
@@ -349,7 +361,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   test("write without relay statement validates table ID", async function () {
     const signer = accounts[1];
 
-    const tableland = await getTableland(signer, {rpcRelay: false});
+    const tableland = await getTableland(signer, { rpcRelay: false });
 
     const prefix = "test_direct_invalid_id_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -358,7 +370,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const queryableName = `${prefix}_31337_0`;
 
     await expect(async function () {
-      await tableland.write(`INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`);
+      await tableland.write(
+        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+      );
     }).rejects.toThrow(
       `getting table: failed to get the table: sql: no rows in result set`
     );
@@ -373,10 +387,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // `key` is a reserved word in sqlite
     const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
 
-    const chainId = 31337;
-
     // Set the controller to Hardhat #7
-    const { hash } = await tableland.setController("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", name);
+    const { hash } = await tableland.setController(
+      "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      name
+    );
 
     expect(typeof hash).toEqual("string");
     expect(hash.length).toEqual(66);
@@ -386,17 +401,18 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const signer = accounts[1];
 
     const tableland = await getTableland(signer, {
-      rpcRelay: true /* this is default `true`, just being explicit */
+      rpcRelay: true /* this is default `true`, just being explicit */,
     });
 
     const prefix = "test_create_setcontroller_relay";
     // `key` is a reserved word in sqlite
     const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
 
-    const chainId = 31337;
-
     // Set the controller to Hardhat #7
-    const { hash } = await tableland.setController("0x14dC79964da2C08b23698B3D3cc7Ca32193d9955", name);
+    const { hash } = await tableland.setController(
+      "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955",
+      name
+    );
 
     expect(typeof hash).toEqual("string");
     expect(hash.length).toEqual(66);
@@ -411,9 +427,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // `key` is a reserved word in sqlite
     const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
 
-    const chainId = 31337;
     // Hardhat #7
-    const controllerAddress = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+    const controllerAddress = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955";
 
     const { hash } = await tableland.setController(controllerAddress, name);
 
@@ -434,9 +449,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // `key` is a reserved word in sqlite
     const { name } = await tableland.create("keyy TEXT, val TEXT", { prefix });
 
-    const chainId = 31337;
     // Hardhat #7
-    const controllerAddress = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955"
+    const controllerAddress = "0x14dC79964da2C08b23698B3D3cc7Ca32193d9955";
 
     const { hash } = await tableland.setController(controllerAddress, name);
 
@@ -476,12 +490,17 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const tableland = await getTableland(signer);
 
     const prefix = "test_get_structure";
-    const { tableId } = await tableland.create("a TEXT, b INT PRIMARY KEY", { prefix });
+    const { tableId } = await tableland.create("a TEXT, b INT PRIMARY KEY", {
+      prefix,
+    });
 
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    const { structureHash } = await tableland.hash("a TEXT, b INT PRIMARY KEY", { prefix });
+    const { structureHash } = await tableland.hash(
+      "a TEXT, b INT PRIMARY KEY",
+      { prefix }
+    );
 
     const tableStructure = await tableland.structure(structureHash);
 
@@ -500,9 +519,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const tableland = await getTableland(signer);
 
     const prefix = "test_create_tc_violation";
-    const { tableId } = await tableland.create("id TEXT, name TEXT, PRIMARY KEY(id)", {
-      prefix
-    });
+    const { tableId } = await tableland.create(
+      "id TEXT, name TEXT, PRIMARY KEY(id)",
+      {
+        prefix,
+      }
+    );
 
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
@@ -515,5 +537,4 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `db query execution failed (code: SQLITE_UNIQUE constraint failed: ${queryableName}.id, msg: UNIQUE constraint failed: ${queryableName}.id)`
     );
   });
-
 });

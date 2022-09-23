@@ -2,7 +2,7 @@
 
 ## Overview
 
-This repo contains tooling to get a sandboxed single node Tableland Network running locally.  This is under active developement and subject to breaking changes without warning.
+This repo contains tooling to get a sandboxed single node Tableland Network running locally. This is under active developement and subject to breaking changes without warning.
 
 Potential uses include:
 
@@ -18,7 +18,7 @@ This repository does not contain either of those parts. It contains tooling to h
 
 ## Quick Start
 
-Once Docker is running just do `npx local-tableland` and an interactive prompt will open and guide you through setting up your Tableland project.  After setup is done you can do `npx local-tableland` again and a locally running tableland network will start. You can now connect your app, deploy contracts, and develop in a sandboxed environment without spending testnet coin.
+Once Docker is running just do `npx local-tableland` and an interactive prompt will open and guide you through setting up your Tableland project. After setup is done you can do `npx local-tableland` again and a locally running tableland network will start. You can now connect your app, deploy contracts, and develop in a sandboxed environment without spending testnet coin.
 
 ## Configuring Your Wallet to Connect
 
@@ -26,7 +26,8 @@ Under the hood Local Tableland is running an in memory instance of Hardhat Netwo
 
 ## Connecting With The JS SDK
 
-Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) is very straight forward.  In the connection options simply specify `chain: 'local-tableland'`.  For example:
+Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) is very straight forward. In the connection options simply specify `chain: 'local-tableland'`. For example:
+
 ```
 import { connect } from '@tableland/sdk';
 const tableland = connect({ chain: 'local-tableland' });
@@ -34,7 +35,7 @@ const tableland = connect({ chain: 'local-tableland' });
 
 ## Interacting With the Registy Contract
 
-Because the Registry Contract is always deployed in the same way on a fresh in memory Hardhat chain, the contract address is always the same, `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`.  All other registry addresses can be found in the [Registry contract repository](https://github.com/tablelandnetwork/evm-tableland/blob/main/proxies.ts)
+Because the Registry Contract is always deployed in the same way on a fresh in memory Hardhat chain, the contract address is always the same, `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`. All other registry addresses can be found in the [Registry contract repository](https://github.com/tablelandnetwork/evm-tableland/blob/main/proxies.ts)
 
 ## More Detailed Setups
 
@@ -43,7 +44,6 @@ TODO:
 
 If you are using this while contributing to the JS SDK, the Validator, or the Registry contract
 TODO:
-
 
 ## Notes
 

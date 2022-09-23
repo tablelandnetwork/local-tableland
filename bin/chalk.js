@@ -2,18 +2,14 @@ const _chalk = {};
 // TODO: jest will not work with typescript and chalk without requiring every dev
 //       to setup a custom jest config.  This "homerolled" coloring can probably
 //       be removed if https://github.com/facebook/jest/issues/12270 is resolved
-const colors = [
-    "red",
-    "cyan",
-    "yellow"
-];
+const colors = ["red", "cyan", "yellow"];
 const resetColor = "\x1b[0m";
 const resetBold = "\x1b[0m";
 const codes = {
     bold: "\x1b[1m",
     cyan: "\x1b[36m",
     red: "\x1b[31m",
-    yellow: "\x1b[33m"
+    yellow: "\x1b[33m",
 };
 const bold = function (text) {
     // notice that we have to use a different reset code here
