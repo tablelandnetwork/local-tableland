@@ -7,7 +7,7 @@ This repo contains tooling to get a sandboxed single node Tableland Network runn
 Potential uses include:
 
 - connecting to a local instance of tableland so initial testing and development doesn't need to rely on a testnet like Mumbai or Görli.
-- Running end to end tests while contibuting changes to core Tableland products like the [JS SDK](https://github.com/tablelandnetwork/js-tableland), [Smart Contract](https://github.com/tablelandnetwork/evm-tableland), and/or the [Validator](https://github.com/tablelandnetwork/js-tableland).
+- Running end to end tests while contributing changes to core Tableland products like the [JS SDK](https://github.com/tablelandnetwork/js-tableland), [Smart Contract](https://github.com/tablelandnetwork/evm-tableland), and/or the [Validator](https://github.com/tablelandnetwork/go-tableland).
 - Exploring, writing, and debuggin Policy Contracts.
 - Enabling automated tests that run against an actual Tableland Network
 
