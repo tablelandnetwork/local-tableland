@@ -33,10 +33,6 @@ import { connect } from '@tableland/sdk';
 const tableland = connect({ chain: 'local-tableland' });
 ```
 
-## Interacting With the Registy Contract
-
-Because the Registry Contract is always deployed in the same way on a fresh in memory Hardhat chain, the contract address is always the same, `0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512`. All other registry addresses can be found in the [Registry contract repository](https://github.com/tablelandnetwork/evm-tableland/blob/main/proxies.ts)
-
 ## More Detailed Setups
 
 If you are using Local Tableland to run tests for your project
