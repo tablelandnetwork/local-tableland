@@ -29,9 +29,8 @@ const project_builder_js_1 = require("./project-builder.js");
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
-// TODO: get types sorted out and remove all the `any`s
 class LocalTableland {
-    constructor(config) {
+    constructor(config = {}) {
         _LocalTableland_instances.add(this);
         this.config = config;
         // an emitter to help with init logic across the multiple sub-processes
@@ -40,10 +39,15 @@ class LocalTableland {
     ;
     start(argv = {}) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.validatorDir = this.validatorDir || (yield (0, util_js_1.configGetter)("Validator project directory", this.config, argv));
-            this.registryDir = this.registryDir || (yield (0, util_js_1.configGetter)("Tableland registry contract project directory", this.config, argv));
-            this.verbose = this.verbose || (yield (0, util_js_1.configGetter)("Should output a verbose log", this.config, argv));
-            this.silent = this.silent || (yield (0, util_js_1.configGetter)("Should silence logging", this.config, argv));
+            const config = (0, util_js_1.buildConfig)(this.config, argv);
+            if (typeof config.validatorDir === "string")
+                this.validatorDir = config.validatorDir;
+            if (typeof config.registryDir === "string")
+                this.registryDir = config.registryDir;
+            if (typeof config.verbose === "boolean")
+                this.verbose = config.verbose;
+            if (typeof config.silent === "boolean")
+                this.silent = config.silent;
             yield __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__start).call(this);
         });
     }

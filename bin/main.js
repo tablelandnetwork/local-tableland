@@ -12,14 +12,13 @@ import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
-import { configGetter, pipeNamedSubprocess, waitForReady } from "./util.js";
+import { buildConfig, pipeNamedSubprocess, waitForReady } from "./util.js";
 import { projectBuilder } from "./project-builder.js";
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
-// TODO: get types sorted out and remove all the `any`s
 export class LocalTableland {
-    constructor(config) {
+    constructor(config = {}) {
         _LocalTableland_instances.add(this);
         this.config = config;
         // an emitter to help with init logic across the multiple sub-processes
@@ -27,10 +26,15 @@ export class LocalTableland {
     }
     ;
     async start(argv = {}) {
-        this.validatorDir = this.validatorDir || await configGetter("Validator project directory", this.config, argv);
-        this.registryDir = this.registryDir || await configGetter("Tableland registry contract project directory", this.config, argv);
-        this.verbose = this.verbose || await configGetter("Should output a verbose log", this.config, argv);
-        this.silent = this.silent || await configGetter("Should silence logging", this.config, argv);
+        const config = buildConfig(this.config, argv);
+        if (typeof config.validatorDir === "string")
+            this.validatorDir = config.validatorDir;
+        if (typeof config.registryDir === "string")
+            this.registryDir = config.registryDir;
+        if (typeof config.verbose === "boolean")
+            this.verbose = config.verbose;
+        if (typeof config.silent === "boolean")
+            this.silent = config.silent;
         await __classPrivateFieldGet(this, _LocalTableland_instances, "m", _LocalTableland__start).call(this);
     }
     ;

@@ -5,9 +5,10 @@
 /// <reference types="node" />
 import { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { Config } from "./util.js";
 export declare class LocalTableland {
     #private;
-    config: any;
+    config: Config;
     initEmitter: EventEmitter;
     registry?: ChildProcess;
     validator?: ChildProcess;
@@ -15,8 +16,8 @@ export declare class LocalTableland {
     registryDir?: string;
     verbose?: boolean;
     silent?: boolean;
-    constructor(config: any);
-    start(argv?: any): Promise<void>;
+    constructor(config?: Config);
+    start(argv?: Config): Promise<void>;
     shutdown(noExit?: boolean): Promise<void>;
     shutdownRegistry(): Promise<void>;
     shutdownValidator(): Promise<void>;

@@ -44,52 +44,52 @@ export const projectBuilder = async function () {
   }
 
   if (!mkdirArtifacts) {
-    console.log(chalk.yellow(`${chalk.bold("Not")} creating any directories.`));
+    console.log(chalk.yellow(`${chalk.bold("Not")} creating any directories or cloning any repositories.`));
   } else {
     console.log(chalk.yellow(`Creating a ${chalk.bold("tableland-artifacts")} directory.`));
     // make an artifacts directory
     spawnSync("mkdir", ["tableland-artifacts"]);
-  }
 
-  let gitCloneValidator = true;
-  if (shouldCreate === choices[1]) {
-    // @ts-ignore https://github.com/enquirer/enquirer/issues/379
-    const confirmer = new prompt.Confirm({
-      name: "gitcloneval",
-      message: "Is it ok to use git to clone the Validator repository?",
-    });
+    let gitCloneValidator = true;
+    if (shouldCreate === choices[1]) {
+      // @ts-ignore https://github.com/enquirer/enquirer/issues/379
+      const confirmer = new prompt.Confirm({
+        name: "gitcloneval",
+        message: "Is it ok to use git to clone the Validator repository?",
+      });
 
-    gitCloneValidator = await confirmer.run();
-  }
+      gitCloneValidator = await confirmer.run();
+    }
 
-  if (!gitCloneValidator) {
-    console.log(chalk.yellow(`${chalk.bold("Not")} cloning the Validator repository.`));
-  } else {
-    console.log(chalk.yellow("Cloning the Validator repository."));
-    spawnSync("git", ["clone", "git@github.com:tablelandnetwork/go-tableland.git"], {
-      cwd: "tableland-artifacts"
-    });
-  }
+    if (!gitCloneValidator) {
+      console.log(chalk.yellow(`${chalk.bold("Not")} cloning the Validator repository.`));
+    } else {
+      console.log(chalk.yellow("Cloning the Validator repository."));
+      spawnSync("git", ["clone", "git@github.com:tablelandnetwork/go-tableland.git"], {
+        cwd: "tableland-artifacts"
+      });
+    }
 
-  let gitCloneEvm = true;
-  if (shouldCreate === choices[1]) {
-    // @ts-ignore https://github.com/enquirer/enquirer/issues/379
-    const confirmer = new prompt.Confirm({
-      name: "gitcloneevm",
-      message: "Is it ok to use git to clone the Registry contract repository?",
-    });
+    let gitCloneEvm = true;
+    if (shouldCreate === choices[1]) {
+      // @ts-ignore https://github.com/enquirer/enquirer/issues/379
+      const confirmer = new prompt.Confirm({
+        name: "gitcloneevm",
+        message: "Is it ok to use git to clone the Registry contract repository?",
+      });
 
-    gitCloneEvm = await confirmer.run()
-  }
+      gitCloneEvm = await confirmer.run()
+    }
 
-  if (!gitCloneEvm) {
-    console.log(chalk.yellow(`${chalk.bold("Not")} cloning the Registry repository.`));
-  } else {
-    console.log(chalk.yellow("Cloning the Registry repository."));
-    // clone the validator
-    spawnSync("git", ["clone", "git@github.com:tablelandnetwork/evm-tableland.git"], {
-      cwd: "tableland-artifacts"
-    });
+    if (!gitCloneEvm) {
+      console.log(chalk.yellow(`${chalk.bold("Not")} cloning the Registry repository.`));
+    } else {
+      console.log(chalk.yellow("Cloning the Registry repository."));
+      // clone the validator
+      spawnSync("git", ["clone", "git@github.com:tablelandnetwork/evm-tableland.git"], {
+        cwd: "tableland-artifacts"
+      });
+    }
   }
 
   let createConfig = true;
@@ -115,6 +115,7 @@ export const projectBuilder = async function () {
 `${chalk.yellow.bold("Setup is done!")}
   If you didn't skip any steps you you can start a local Tableland Network by running this command again.
   Use the --help flag to see an overview of usage for this cli.
+  If you skipped some of the steps, edit your tableland.config.js file before starting.
   Checkout our docs at ${chalk.cyan(docsLink)}
   All the source is on github at ${chalk.cyan(githubLink)}`
   );

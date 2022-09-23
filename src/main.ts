@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
-import { configGetter, pipeNamedSubprocess, waitForReady } from "./util.js"
+import { buildConfig, Config, pipeNamedSubprocess, waitForReady } from "./util.js"
 import { projectBuilder } from "./project-builder.js";
 
 
@@ -15,7 +15,6 @@ import { projectBuilder } from "./project-builder.js";
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
-// TODO: get types sorted out and remove all the `any`s
 export class LocalTableland {
   config;
   initEmitter;
@@ -27,18 +26,19 @@ export class LocalTableland {
   verbose?: boolean;
   silent?: boolean;
 
-  constructor(config: any) {
+  constructor(config: Config = {}) {
     this.config = config;
 
     // an emitter to help with init logic across the multiple sub-processes
     this.initEmitter = new EventEmitter();
   };
 
-  async start(argv: any = {}) {
-    this.validatorDir = this.validatorDir || await configGetter("Validator project directory", this.config, argv);
-    this.registryDir = this.registryDir || await configGetter("Tableland registry contract project directory", this.config, argv);
-    this.verbose = this.verbose || await configGetter("Should output a verbose log", this.config, argv);
-    this.silent = this.silent || await configGetter("Should silence logging", this.config, argv);
+  async start(argv: Config = {}) {
+    const config = buildConfig(this.config, argv);
+    if (typeof config.validatorDir === "string") this.validatorDir = config.validatorDir;
+    if (typeof config.registryDir === "string") this.registryDir = config.registryDir;
+    if (typeof config.verbose === "boolean") this.verbose = config.verbose;
+    if (typeof config.silent === "boolean") this.silent = config.silent;
 
     await this.#_start();
   };

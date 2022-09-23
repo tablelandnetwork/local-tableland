@@ -1,68 +1,86 @@
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
+import { Readable } from "node:stream";
+import { ChildProcess } from "node:child_process";
 
+
+export type ConfigDescriptor = {
+  name: string;
+  env: "VALIDATOR_DIR" | "REGISTRY_DIR" | "VERBOSE" | "SILENT";
+  file: "validatorDir" | "registryDir" | "verbose" | "silent";
+  arg: "validator" | "registry" | "verbose" | "silent";
+  isPath: boolean;
+};
 // build a config object from
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
 //       3. a `tableland.config.js` file, which is either inside `process.pwd()` or specified
 //          via command line arg.  e.g. `npx local-tableland --config ../tlb-confib.js`
-const configDescriptors = [
+const configDescriptors: ConfigDescriptor[] = [
   {
-    name: "Validator project directory",
+    name: "validatorDir",
     env: "VALIDATOR_DIR",
     file: "validatorDir",
     arg: "validator",
     isPath: true
   }, {
-    name: "Tableland registry contract project directory",
+    name: "registryDir",
     env: "REGISTRY_DIR",
     file: "registryDir",
     arg: "registry",
     isPath: true
   }, {
-    name: "Should output a verbose log",
+    name: "verbose",
     env: "VERBOSE",
     file: "verbose",
-    arg: "verbose"
+    arg: "verbose",
+    isPath: false
   }, {
-    name: "Should silence logging",
+    name: "silent",
     env: "SILENT",
     file: "silent",
-    arg: "silent"
+    arg: "silent",
+    isPath: false
   }
 ];
 
-export const configGetter = async function (configName: string, configFile: any, argv: any) {
-  const configDescriptor = configDescriptors.find(v => v.name === configName);
-  if (!configDescriptor) throw new Error("cannot generate getter");
+export type Config = {
+  validator?: string;
+  validatorDir?: string;
+  registry?: string;
+  registryDir?: string;
+  verbose?: boolean;
+  silent?: boolean;
+};
 
-  const file = configFile[configDescriptor.file];
-  // TODO: figure out why typescript won't let me do `const arg = argv[configDescriptor.arg];`
-  // @ts-ignore
-  const arg = argv[configDescriptor.arg];
-  const env = process.env[configDescriptor.env];
+export const buildConfig = function (configFile: Config, argv: Config) {
+  const configObject: { [x: string]: string | boolean | undefined } = {};
+  for (let i = 0; i < configDescriptors.length; i++) {
+    const configDescriptor = configDescriptors[i];
 
-  let val: any;
-  // priority is: command argument, then environment variable, then config file
-  val = arg || env || file;
+    const file = configFile[configDescriptor.file];
+    const arg = argv[configDescriptor.arg];
+    const env = process.env[configDescriptor.env];
 
-  if (configDescriptor.isPath) {
-    // if the value is absent then we can return undefined
-    if (!val) return;
+    let val: string | boolean | undefined;
+    // priority is: command argument, then environment variable, then config file
+    val = arg || env || file;
 
-    // if the path is absolute just pass it along
-    if (isAbsolute(val)) {
-      return val;
+    if (
+      configDescriptor.isPath &&
+      typeof val === "string" &&
+      val &&
+      !isAbsolute(val)
+    ) {
+      // if path is not absolute treat it as if it's relative
+      // to calling cwd and build the absolute path
+      val = resolve(process.cwd(), val);
     }
 
-    // if path is not absolute treat it as if it's relative
-    // to calling cwd and build the absolute path
-    val = resolve(process.cwd(), val);
-    return val;
+    configObject[configDescriptor.name] = val;
   }
 
-  return val;
-
+  return configObject;
 };
 
 export const getConfigFile = async function () {
@@ -94,15 +112,31 @@ const isExtraneousLog = function (log: string) {
   return false;
 };
 
+export interface PipeOptions {
+  message?: string;
+  fails?: {
+    message: string;
+    hint: string;
+  };
+  verbose?: boolean;
+  silent?: boolean;
+  emitter?: EventEmitter;
+  readyEvent?: string;
+}
+
 export const pipeNamedSubprocess = async function (
   prefix: string,
-  prcss: any,
-  options?: any
+  prcss: ChildProcess,
+  options?: PipeOptions
 ) {
   let ready = !(options && options.message);
   const fails = options?.fails;
-  const verbose = options.verbose;
-  const silent = options.silent;
+  const verbose = options?.verbose;
+  const silent = options?.silent;
+
+  if (!(prcss.stdout instanceof Readable && prcss.stderr instanceof Readable)) {
+    throw new Error("cannot pipe subprocess with out stdout and stderr");
+  }
 
   prcss.stdout.on('data', function (data: string) {
     // data is going to be a buffer at runtime
@@ -135,7 +169,13 @@ export const pipeNamedSubprocess = async function (
     }
 
     if (!ready) {
-      if (data.includes(options.message) && options.readyEvent) {
+      if (
+        options &&
+        typeof options.message === "string" &&
+        data.includes(options.message) &&
+        typeof options.readyEvent === "string" &&
+        options.emitter instanceof EventEmitter
+      ) {
         options.emitter.emit(options.readyEvent);
         ready = true;
       }
