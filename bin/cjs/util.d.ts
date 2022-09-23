@@ -20,6 +20,11 @@ export declare const buildConfig: (config: Config) => {
     [x: string]: string | boolean | undefined;
 };
 export declare const getConfigFile: () => Promise<any>;
+declare type Account = {
+    address: string;
+    privateKey: string;
+};
+export declare const getAccounts: () => Account[];
 export interface PipeOptions {
     message?: string;
     fails?: {
@@ -33,3 +38,4 @@ export interface PipeOptions {
 }
 export declare const pipeNamedSubprocess: (prefix: string, prcss: ChildProcess, options?: PipeOptions) => Promise<void>;
 export declare const waitForReady: (readyEvent: string, emitter: EventEmitter) => Promise<void>;
+export {};

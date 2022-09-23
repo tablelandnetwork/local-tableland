@@ -5,8 +5,8 @@
 /// <reference types="node" />
 import { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { Config } from "./util.js";
-export declare class LocalTableland {
+import { Config, getAccounts } from "./util.js";
+declare class LocalTableland {
     #private;
     config: Config;
     initEmitter: EventEmitter;
@@ -22,3 +22,4 @@ export declare class LocalTableland {
     shutdownRegistry(): Promise<void>;
     shutdownValidator(): Promise<void>;
 }
+export { LocalTableland, getAccounts };

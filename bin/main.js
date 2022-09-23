@@ -12,11 +12,11 @@ import { join } from "node:path";
 import { EventEmitter } from "node:events";
 import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
-import { buildConfig, getConfigFile, pipeNamedSubprocess, waitForReady } from "./util.js";
+import { buildConfig, getConfigFile, pipeNamedSubprocess, waitForReady, getAccounts } from "./util.js";
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;
-export class LocalTableland {
+class LocalTableland {
     constructor(configParams = {}) {
         _LocalTableland_instances.add(this);
         this.config = configParams;
@@ -188,4 +188,5 @@ _LocalTableland_instances = new WeakSet(), _LocalTableland__start = async functi
     }
 };
 ;
+export { LocalTableland, getAccounts };
 //# sourceMappingURL=main.js.map

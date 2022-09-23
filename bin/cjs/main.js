@@ -18,13 +18,14 @@ var __classPrivateFieldGet = (this && this.__classPrivateFieldGet) || function (
 };
 var _LocalTableland_instances, _LocalTableland__start, _LocalTableland__cleanup;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.LocalTableland = void 0;
+exports.getAccounts = exports.LocalTableland = void 0;
 const node_child_process_1 = require("node:child_process");
 const node_path_1 = require("node:path");
 const node_events_1 = require("node:events");
 const node_fs_1 = require("node:fs");
 const chalk_js_1 = require("./chalk.js");
 const util_js_1 = require("./util.js");
+Object.defineProperty(exports, "getAccounts", { enumerable: true, get: function () { return util_js_1.getAccounts; } });
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG;

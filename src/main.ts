@@ -12,7 +12,8 @@ import {
   getConfigFile,
   Config,
   pipeNamedSubprocess,
-  waitForReady
+  waitForReady,
+  getAccounts
 } from "./util.js"
 
 
@@ -20,7 +21,7 @@ import {
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
-export class LocalTableland {
+class LocalTableland {
   config;
   initEmitter;
   registry?: ChildProcess;
@@ -41,6 +42,7 @@ export class LocalTableland {
   async start() {
     const configFile = await getConfigFile();
     const config = buildConfig({ ...configFile, ...this.config });
+
     if (typeof config.validatorDir === "string") this.validatorDir = config.validatorDir;
     if (typeof config.registryDir === "string") this.registryDir = config.registryDir;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
@@ -229,3 +231,5 @@ export class LocalTableland {
     }
   };
 };
+
+export { LocalTableland, getAccounts };
