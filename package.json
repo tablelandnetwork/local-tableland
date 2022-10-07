@@ -38,7 +38,7 @@
     "clean": "rm -rf bin/*",
     "build:esm": "tsc -p tsconfig.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
-    "build": "npm run clean && npm run build:esm && npm run build:cjs",
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && chmod +x bin/up.js",
     "up": "node bin/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "bin": {
