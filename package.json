@@ -27,7 +27,8 @@
   },
   "files": [
     "dist/*",
-    "src/*"
+    "src/*",
+    "hardhat.config.js"
   ],
   "scripts": {
     "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
@@ -64,6 +65,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.0.1",
     "ethers": "^5.7.1",
+    "hardhat": "^2.11.2",
     "jest": "^28.1.0",
     "js-yaml": "^4.1.0",
     "prettier": "^2.7.1",
