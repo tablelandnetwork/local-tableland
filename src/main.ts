@@ -15,7 +15,6 @@ import {
   waitForReady,
   getAccounts,
 } from "./util.js";
-const defaultRegistry = "../node_modules/@tableland/evm";
 
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
@@ -45,10 +44,8 @@ class LocalTableland {
 
     if (typeof config.validatorDir === "string")
       this.validatorDir = config.validatorDir;
-    if (typeof config.registryDir === "string" && config.registryDir) {
+    if (typeof config.registryDir === "string") {
       this.registryDir = config.registryDir;
-    } else {
-      this.registryDir = defaultRegistry;
     }
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
@@ -69,6 +66,7 @@ class LocalTableland {
     // Run a local hardhat node
     this.registry = spawn("npx", ["hardhat", "node"], {
       detached: true,
+      cwd: this.registryDir
     });
 
     this.registry.on("error", (err) => {

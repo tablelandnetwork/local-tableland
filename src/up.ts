@@ -13,7 +13,7 @@ const argv = yargs(hideBin(process.argv)).options({
   },
   registry: {
     type: "string",
-    default: "",
+    default: "./registry",
     description: "Path the the Tableland Registry contract repository",
   },
   verbose: {
@@ -57,15 +57,12 @@ const go = async function () {
 
   const opts: Config = {
     validator: argvValidator,
+    registry: argvRegistry,
     // @ts-ignore
     verbose: argv.verbose,
     // @ts-ignore
     silent: argv.silent,
   };
-
-  if (argvRegistry) {
-    opts.registry = argvRegistry;
-  }
 
   const tableland = new LocalTableland(opts);
 

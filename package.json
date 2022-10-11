@@ -31,6 +31,7 @@
     "hardhat.config.js"
   ],
   "scripts": {
+    "postinstall": "cd registry && npm install",
     "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
     "lint": "eslint src/ test/ --ext .js,.jsx,.ts,.tsx",
     "prepublishOnly": "npm run build",
@@ -40,7 +41,7 @@
     "build:esm": "tsc -p tsconfig.json",
     "build:cjs": "tsc -p tsconfig.cjs.json",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && ./fixup.sh",
-    "up": "node dist/up.js --validator ../go-tableland --registry ../evm-tableland"
+    "up": "node dist/esm/up.js --validator ../go-tableland --registry ../evm-tableland"
   },
   "bin": {
     "local-tableland": "dist/esm/up.js"
@@ -65,7 +66,7 @@
     "eslint-plugin-prettier": "^4.2.1",
     "eslint-plugin-promise": "^6.0.1",
     "ethers": "^5.7.1",
-    "hardhat": "^2.11.2",
+    "hardhat": "^2.12.0",
     "jest": "^28.1.0",
     "js-yaml": "^4.1.0",
     "prettier": "^2.7.1",
