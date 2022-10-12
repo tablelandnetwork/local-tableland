@@ -46,7 +46,7 @@ class LocalTableland {
 
     if (typeof config.validatorDir === "string")
       this.validatorDir = config.validatorDir;
-    if (typeof config.registryDir === "string") {
+    if (typeof config.registryDir === "string" && config.registryDir) {
       this.registryDir = config.registryDir;
     } else {
       this.registryDir = defaultRegistryDir
