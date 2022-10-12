@@ -9,11 +9,13 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
 import {
   buildConfig,
+  defaultRegistryDir,
   getConfigFile,
   Config,
   pipeNamedSubprocess,
   waitForReady,
   getAccounts,
+  logSync
 } from "./util.js";
 
 // TODO: should this be a per instance value?
@@ -46,6 +48,8 @@ class LocalTableland {
       this.validatorDir = config.validatorDir;
     if (typeof config.registryDir === "string") {
       this.registryDir = config.registryDir;
+    } else {
+      this.registryDir = defaultRegistryDir
     }
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
@@ -89,13 +93,13 @@ class LocalTableland {
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     // Deploy the Registry to the Hardhat node
-    spawnSync(
+    logSync(spawnSync(
       "npx",
       ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
       {
         cwd: this.registryDir,
       }
-    );
+    ));
 
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance
@@ -196,14 +200,7 @@ class LocalTableland {
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
   #_cleanup() {
-    const dockerContainer = spawnSync("docker", ["container", "prune", "-f"]);
-
-    // make sure this blows up if Docker isn't running
-    const dcError = dockerContainer.stderr && dockerContainer.stderr.toString();
-    if (dcError) {
-      console.log(chalk.red(dcError));
-      throw dcError;
-    }
+    logSync(spawnSync("docker", ["container", "prune", "-f"]));
 
     spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
     spawnSync("docker", ["volume", "prune", "-f"]);

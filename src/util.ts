@@ -1,7 +1,8 @@
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
-import { ChildProcess } from "node:child_process";
+import { ChildProcess, SpawnSyncReturns } from "node:child_process";
+import { chalk } from "./chalk.js";
 
 export type ConfigDescriptor = {
   name: string;
@@ -10,6 +11,7 @@ export type ConfigDescriptor = {
   arg: "validator" | "registry" | "verbose" | "silent";
   isPath: boolean;
 };
+
 // build a config object from
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
@@ -98,11 +100,141 @@ export const getConfigFile = async function () {
   }
 };
 
+const isExtraneousLog = function (log: string) {
+  log = log.toLowerCase();
+
+  if (log.match(/eth_getLogs/i)) return true;
+  if (log.match(/Mined empty block/i)) return true;
+  if (log.match(/eth_getBlockByNumber/i)) return true;
+  if (log.match(/eth_getBalance/i)) return true;
+  if (log.match(/processing height/i)) return true;
+  if (log.match(/new last processed height/i)) return true;
+  if (log.match(/eth_unsubscribe/i)) return true;
+  if (log.match(/eth_subscribe/i)) return true;
+  if (log.match(/new blocks subscription is quiet, rebuilding/i)) return true;
+  if (log.match(/received new chain header/i)) return true;
+  if (log.match(/dropping new height/i)) return true;
+
+  return false;
+};
+
+export const logSync = function (prcss: SpawnSyncReturns<Buffer>, shouldThrow = true) {
+  // make sure this blows up if Docker isn't running
+  const psError = prcss.stderr && prcss.stderr.toString();
+  if (shouldThrow && psError) {
+    console.log(chalk.red(psError));
+    throw psError;
+  }
+}
+
+export interface PipeOptions {
+  message?: string;
+  fails?: {
+    message: string;
+    hint: string;
+  };
+  verbose?: boolean;
+  silent?: boolean;
+  emitter?: EventEmitter;
+  readyEvent?: string;
+}
+
+export const pipeNamedSubprocess = async function (
+  prefix: string,
+  prcss: ChildProcess,
+  options?: PipeOptions
+) {
+  let ready = !(options && options.message);
+  const fails = options?.fails;
+  const verbose = options?.verbose;
+  const silent = options?.silent;
+
+  if (!(prcss.stdout instanceof Readable && prcss.stderr instanceof Readable)) {
+    throw new Error("cannot pipe subprocess with out stdout and stderr");
+  }
+
+  prcss.stdout.on("data", function (data: string) {
+    // data is going to be a buffer at runtime
+    data = data.toString();
+    if (!data) return;
+
+    let lines = data.split("\n");
+    if (!verbose) {
+      lines = lines.filter((line) => !isExtraneousLog(line));
+      // if not verbose we are going to elliminate multiple empty
+      // lines and any messages that don't have at least one character
+      if (!lines.filter((line) => line.trim()).length) {
+        lines = [];
+      } else {
+        lines = lines.reduce((acc, cur) => {
+          if (acc.length && !acc[acc.length - 1] && !cur.trim()) return acc;
+
+          // @ts-ignore
+          return acc.concat([cur.trim()]);
+        }, []);
+      }
+    }
+
+    if (!silent) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (!verbose && isExtraneousLog(line)) continue;
+        console.log(`[${prefix}] ${line}`);
+      }
+    }
+
+    if (!ready) {
+      if (
+        options &&
+        typeof options.message === "string" &&
+        data.includes(options.message) &&
+        typeof options.readyEvent === "string" &&
+        options.emitter instanceof EventEmitter
+      ) {
+        options.emitter.emit(options.readyEvent);
+        ready = true;
+      }
+    }
+  });
+
+  prcss.stderr.on("data", function (data: string) {
+    if (!(data && data.toString)) return;
+    // data is going to be a buffer at runtime
+    data = data.toString();
+    if (!data.trim()) return;
+
+    const lines = data
+      .split("\n")
+      .map((l) => l.trim())
+      .filter((l) => l);
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      console.error(`[${prefix}] ${line}`);
+    }
+    if (fails && data.includes(fails.message)) {
+      throw new Error(fails.message);
+    }
+  });
+};
+
+// enable async/await for underlying event pattern
+export const waitForReady = function (
+  readyEvent: string,
+  emitter: EventEmitter
+): Promise<void> {
+  return new Promise(function (resolve) {
+    emitter.once(readyEvent, () => resolve());
+  });
+};
+
+export const defaultRegistryDir = "node_modules/@tableland/local/registry"
+
 type Account = {
   address: string;
   privateKey: string;
 };
 
+// TODO: we can get these from hardhat
 export const getAccounts = function (): Account[] {
   return [
     {
@@ -206,122 +338,4 @@ export const getAccounts = function (): Account[] {
         "0xdf57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
     },
   ];
-};
-
-const isExtraneousLog = function (log: string) {
-  log = log.toLowerCase();
-
-  if (log.match(/eth_getLogs/i)) return true;
-  if (log.match(/Mined empty block/i)) return true;
-  if (log.match(/eth_getBlockByNumber/i)) return true;
-  if (log.match(/eth_getBalance/i)) return true;
-  if (log.match(/processing height/i)) return true;
-  if (log.match(/new last processed height/i)) return true;
-  if (log.match(/eth_unsubscribe/i)) return true;
-  if (log.match(/eth_subscribe/i)) return true;
-  if (log.match(/new blocks subscription is quiet, rebuilding/i)) return true;
-  if (log.match(/received new chain header/i)) return true;
-  if (log.match(/dropping new height/i)) return true;
-
-  return false;
-};
-
-export interface PipeOptions {
-  message?: string;
-  fails?: {
-    message: string;
-    hint: string;
-  };
-  verbose?: boolean;
-  silent?: boolean;
-  emitter?: EventEmitter;
-  readyEvent?: string;
-}
-
-export const pipeNamedSubprocess = async function (
-  prefix: string,
-  prcss: ChildProcess,
-  options?: PipeOptions
-) {
-  let ready = !(options && options.message);
-  const fails = options?.fails;
-  const verbose = options?.verbose;
-  const silent = options?.silent;
-
-  if (!(prcss.stdout instanceof Readable && prcss.stderr instanceof Readable)) {
-    throw new Error("cannot pipe subprocess with out stdout and stderr");
-  }
-
-  prcss.stdout.on("data", function (data: string) {
-    // data is going to be a buffer at runtime
-    data = data.toString();
-    if (!data) return;
-
-    let lines = data.split("\n");
-    if (!verbose) {
-      lines = lines.filter((line) => !isExtraneousLog(line));
-      // if not verbose we are going to elliminate multiple empty
-      // lines and any messages that don't have at least one character
-      if (!lines.filter((line) => line.trim()).length) {
-        lines = [];
-      } else {
-        lines = lines.reduce((acc, cur) => {
-          if (acc.length && !acc[acc.length - 1] && !cur.trim()) return acc;
-
-          // @ts-ignore
-          return acc.concat([cur.trim()]);
-        }, []);
-      }
-    }
-
-    if (!silent) {
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i];
-        if (!verbose && isExtraneousLog(line)) continue;
-        console.log(`[${prefix}] ${line}`);
-      }
-    }
-
-    if (!ready) {
-      if (
-        options &&
-        typeof options.message === "string" &&
-        data.includes(options.message) &&
-        typeof options.readyEvent === "string" &&
-        options.emitter instanceof EventEmitter
-      ) {
-        options.emitter.emit(options.readyEvent);
-        ready = true;
-      }
-    }
-  });
-
-  prcss.stderr.on("data", function (data: string) {
-    if (!(data && data.toString)) return;
-    // data is going to be a buffer at runtime
-    data = data.toString();
-    if (!data.trim()) return;
-
-    const lines = data
-      .split("\n")
-      .map((l) => l.trim())
-      .filter((l) => l);
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      console.error(`[${prefix}] ${line}`);
-    }
-    if (fails && data.includes(fails.message)) {
-      throw new Error(fails.message);
-    }
-  });
-};
-
-// enable async/await for underlying event pattern
-export const waitForReady = function (
-  readyEvent: string,
-  emitter: EventEmitter
-): Promise<void> {
-  return new Promise(function (resolve) {
-    emitter.once(readyEvent, () => resolve());
-  });
 };
