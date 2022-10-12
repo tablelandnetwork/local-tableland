@@ -3,7 +3,7 @@
   "proxies": [
     {
       "address": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-      "txHash": "0x5d498d1279ef95a424fc1dc16d008f8a3f4e6fee7f55eefa5425ddb9ca7da511",
+      "txHash": "0x045f9529be2efcb6b305fd2aaa3c6c2829cd92972fdd05681544666d84a31fa6",
       "kind": "uups"
     }
   ],
