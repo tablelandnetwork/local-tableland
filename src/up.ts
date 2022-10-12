@@ -13,7 +13,7 @@ const argv = yargs(hideBin(process.argv)).options({
   },
   registry: {
     type: "string",
-    default: "./registry",
+    default: "",
     description: "Path the the Tableland Registry contract repository",
   },
   verbose: {
@@ -46,6 +46,7 @@ const go = async function () {
   const argvValidator = argv.validator;
   // @ts-ignore
   const argvRegistry = argv.registry;
+
   const configFile = await getConfigFile();
   const hasValidatorDir = configFile.validatorDir || argvValidator;
   if (!(hasValidatorDir)) {
