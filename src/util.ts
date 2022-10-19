@@ -1,8 +1,14 @@
-import { isAbsolute, join, resolve } from "node:path";
+import { isAbsolute, join, resolve, dirname } from "node:path";
+import { fileURLToPath } from 'node:url'
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { chalk } from "./chalk.js";
+
+const _dirname = typeof __dirname !== 'undefined'
+  ? __dirname
+  // @ts-ignore
+  : dirname(fileURLToPath(import.meta.url))
 
 export type ConfigDescriptor = {
   name: string;
@@ -227,7 +233,9 @@ export const waitForReady = function (
   });
 };
 
-export const defaultRegistryDir = "node_modules/@tableland/local/registry"
+export const defaultRegistryDir = function () {
+  return resolve(_dirname, "../../registry");
+};
 
 type Account = {
   address: string;
