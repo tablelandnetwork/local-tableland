@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.0-pre12",
+  "version": "0.0.0-pre12.11",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -28,10 +28,16 @@
   "files": [
     "dist/*",
     "src/*",
-    "hardhat.config.js"
+    "registry/hardhat.config.ts",
+    "registry/package.json",
+    "registry/package-lock.json",
+    "registry/hardhat.config.js",
+    "registry/tsconfig.json",
+    "registry/contracts/*",
+    "registry/scripts/*"
   ],
   "scripts": {
-    "postinstall": "cd registry && npm install",
+    "postinstall": "mkdir -p registry && cd registry && npm install",
     "test": "node --experimental-fetch --experimental-vm-modules node_modules/.bin/jest --verbose",
     "lint": "eslint src/ test/ --ext .js,.jsx,.ts,.tsx",
     "prepublishOnly": "npm run build",
