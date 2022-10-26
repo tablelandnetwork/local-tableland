@@ -3,7 +3,11 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import "@openzeppelin/hardhat-upgrades";
 import "@nomicfoundation/hardhat-toolbox";
 import "@nomiclabs/hardhat-ethers";
-import { baseURIs, proxies, TablelandNetworkConfig } from "@tableland/evm/network";
+import {
+  baseURIs,
+  proxies,
+  TablelandNetworkConfig,
+} from "@tableland/evm/network";
 
 const config: HardhatUserConfig = {
   solidity: "0.8.17",
