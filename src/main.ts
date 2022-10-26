@@ -15,7 +15,7 @@ import {
   pipeNamedSubprocess,
   waitForReady,
   getAccounts,
-  logSync
+  logSync,
 } from "./util.js";
 
 // TODO: should this be a per instance value?
@@ -70,7 +70,7 @@ class LocalTableland {
     // Run a local hardhat node
     this.registry = spawn("npx", ["hardhat", "node"], {
       detached: true,
-      cwd: this.registryDir
+      cwd: this.registryDir,
     });
 
     this.registry.on("error", (err) => {
@@ -93,13 +93,15 @@ class LocalTableland {
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     // Deploy the Registry to the Hardhat node
-    logSync(spawnSync(
-      "npx",
-      ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
-      {
-        cwd: this.registryDir,
-      }
-    ));
+    logSync(
+      spawnSync(
+        "npx",
+        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+        {
+          cwd: this.registryDir,
+        }
+      )
+    );
 
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance

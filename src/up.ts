@@ -49,7 +49,7 @@ const go = async function () {
 
   const configFile = await getConfigFile();
   const hasValidatorDir = configFile.validatorDir || argvValidator;
-  if (!(hasValidatorDir)) {
+  if (!hasValidatorDir) {
     // If these aren't specified then we want to open a terminal prompt that
     // will help the user setup their project directory then exit when finished
     await projectBuilder();
