@@ -85,11 +85,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const signer2 = accounts[2];
     const tableland2 = await getTableland(signer2);
 
-    await expect(async function () {
-      await tableland2.write(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      );
-    }()).to.be.rejectedWith(
+    await expect(
+      (async function () {
+        await tableland2.write(
+          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+        );
+      })()
+    ).to.be.rejectedWith(
       "db query execution failed (code: ACL, msg: not enough privileges)"
     );
 
@@ -229,12 +231,14 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
     );
 
-    await expect(async function () {
-      await tableland.read(`SELECT * FROM ${queryableName};`, {
-        unwrap: true,
-        output: "objects",
-      });
-    }()).to.be.rejectedWith(
+    await expect(
+      (async function () {
+        await tableland.read(`SELECT * FROM ${queryableName};`, {
+          unwrap: true,
+          output: "objects",
+        });
+      })()
+    ).to.be.rejectedWith(
       "unwrapped results with more than one row aren't supported in JSON RPC API"
     );
   });
@@ -282,12 +286,14 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
     );
 
-    await expect(async function () {
-      await tableland.read(`SELECT * FROM ${queryableName};`, {
-        extract: true,
-        output: "objects",
-      });
-    }()).to.be.rejectedWith(
+    await expect(
+      (async function () {
+        await tableland.read(`SELECT * FROM ${queryableName};`, {
+          extract: true,
+          output: "objects",
+        });
+      })()
+    ).to.be.rejectedWith(
       "can only extract values for result sets with one column but this has 2"
     );
   });
@@ -354,11 +360,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // the prefix is for the first table, but id is for second table
     const queryableName = `${prefix}_31337_${tableId}`;
 
-    await expect(async function () {
-      await tableland.write(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      );
-    }()).to.be.rejectedWith(
+    await expect(
+      (async function () {
+        await tableland.write(
+          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+        );
+      })()
+    ).to.be.rejectedWith(
       `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
     );
   });
@@ -374,11 +382,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     // the tableId 0 does not exist since we start with tableId == 1
     const queryableName = `${prefix}_31337_0`;
 
-    await expect(async function () {
-      await tableland.write(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      );
-    }()).to.be.rejectedWith(
+    await expect(
+      (async function () {
+        await tableland.write(
+          `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+        );
+      })()
+    ).to.be.rejectedWith(
       `getting table: failed to get the table: sql: no rows in result set`
     );
   });
@@ -534,11 +544,13 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const chainId = 31337;
     const queryableName = `${prefix}_${chainId}_${tableId}`;
 
-    await expect(async function () {
-      await tableland.write(
-        `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
-      );
-    }()).to.be.rejectedWith(
+    await expect(
+      (async function () {
+        await tableland.write(
+          `INSERT INTO ${queryableName} VALUES (1, '1'), (1, '1')`
+        );
+      })()
+    ).to.be.rejectedWith(
       `db query execution failed (code: SQLITE_UNIQUE constraint failed: ${queryableName}.id, msg: UNIQUE constraint failed: ${queryableName}.id)`
     );
   });

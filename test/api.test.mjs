@@ -21,10 +21,10 @@ spawnSync("cp", [
 ]);
 
 describe("Validator gateway server", function () {
-  // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
-  //this.timeout(25000); TODO: use a programatic instance of l.t.
+  // TODO: use a programatic instance of l.t.
   let token, transactionHash, tableHash, schemaTableId, controllerTableId;
   before(async function () {
+    // setup takes a bit longer than normal since we are usually waiting for blocks to finalize etc...
     this.timeout(15000);
     const accounts = getAccounts();
     const signer0 = accounts[10];
