@@ -3,10 +3,9 @@
  **/
 
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
-import { join } from "node:path";
 import { EventEmitter } from "node:events";
-import { readFileSync, writeFileSync } from "node:fs";
 import { chalk } from "./chalk.js";
+import { ValidatorDev, ValidatorPkg } from "./validators.js"
 import {
   buildConfig,
   defaultRegistryDir,
@@ -18,15 +17,12 @@ import {
   logSync,
 } from "./util.js";
 
-// TODO: should this be a per instance value?
-// store the Validator config file in memory, so we can restore it during cleanup
-let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
 class LocalTableland {
   config;
   initEmitter;
   registry?: ChildProcess;
-  validator?: ChildProcess;
+  validator?: ValidatorDev | ValidatorPkg;
 
   validatorDir?: string;
   registryDir?: string;
@@ -103,44 +99,24 @@ class LocalTableland {
       )
     );
 
-    // Add an empty .env file to the validator. The Validator expects this to exist,
-    // but doesn't need any of the values when running a local instance
-    writeFileSync(
-      join(this.validatorDir, "/docker/local/api/.env_validator"),
-      " "
-    );
 
-    // Add the registry address to the Validator config
-    const configFilePath = join(
-      this.validatorDir,
-      "/docker/local/api/config.json"
-    );
-    const configFileStr = readFileSync(configFilePath).toString();
-    const validatorConfig = JSON.parse(configFileStr);
+    // TODO: need to determine if we are starting the validator via docker
+    // and a local repo, or if are running a binary etc...
 
-    // save the validator config state before this script modifies it
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+    const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
 
-    // TODO: this could be parsed out of the deploy process, but since
-    //       it's always the same address just hardcoding it here
-    validatorConfig.Chains[0].Registry.ContractAddress =
-      "0xe7f1725e7734ce288f8367e1bb143e90bb3f0512";
+    this.validator = new ValidatorClass(this.validatorDir);
+    this.validator.start();
 
-    writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+    if (!this.validator.process) throw new Error("could not start Validator process");
 
-    // start the validator
-    this.validator = spawn("make", ["local-up"], {
-      detached: true,
-      cwd: join(this.validatorDir, "docker"),
-    });
-
-    this.validator.on("error", (err) => {
+    this.validator.process.on("error", (err) => {
       throw new Error(`validator errored with: ${err}`);
     });
 
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.yellow.bold("Validator"), this.validator, {
+    pipeNamedSubprocess(chalk.yellow.bold("Validator"), this.validator.process, {
       // use events to indicate when the underlying process is finished
       // initializing and is ready to participate in the Tableland network
       readyEvent: validatorReadyEvent,
@@ -188,47 +164,26 @@ class LocalTableland {
 
   shutdownValidator(): Promise<void> {
     return new Promise((resolve) => {
-      if (!this.validator) return resolve();
+      if (!(this.validator && this.validator.process)) return resolve();
 
-      this.validator.on("close", () => resolve());
+      this.validator.process.on("close", () => resolve());
       // If this Class is imported and run by a test runner then the ChildProcess instances are
       // sub-processes of a ChildProcess instance which means in order to kill them in a way that
       // enables graceful shut down they have to run in detached mode and be killed by the pid
       // @ts-ignore
-      process.kill(-this.validator.pid);
+      process.kill(-this.validator.process.pid);
     });
   }
 
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
   #_cleanup() {
-    logSync(spawnSync("docker", ["container", "prune", "-f"]));
-
-    spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
-    spawnSync("docker", ["volume", "prune", "-f"]);
     spawnSync("rm", ["-rf", "./tmp"]);
 
     // If the directory hasn't been specified there isn't anything to clean up
-    if (!this.validatorDir) return;
+    if (!this.validator) return;
 
-    const dbFiles = [
-      join(this.validatorDir, "/docker/local/api/database.db"),
-      join(this.validatorDir, "/docker/local/api/database.db-shm"),
-      join(this.validatorDir, "/docker/local/api/database.db-wal"),
-    ];
-
-    for (const filepath of dbFiles) {
-      spawnSync("rm", ["-f", filepath]);
-    }
-
-    // reset the Validator config file that is modified on startup
-    if (ORIGINAL_VALIDATOR_CONFIG) {
-      const configFilePath = join(
-        this.validatorDir,
-        "/docker/local/api/config.json"
-      );
-      writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
-    }
+    this.validator.cleanup();
   }
 }
 
