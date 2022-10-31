@@ -11,6 +11,9 @@ coverage.json
 typechain
 typechain-types
 
+validator/*.db
+validator/backups
+
 #Hardhat files
 cache
 artifacts
