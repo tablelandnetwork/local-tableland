@@ -54,9 +54,9 @@ class LocalTableland {
   }
 
   async #_start() {
-    if (!(this.validatorDir && this.registryDir)) {
+    if (!this.registryDir) {
       throw new Error(
-        "cannot start a local network without Validator and Registry"
+        "cannot start a local network without Registry"
       );
     }
 
