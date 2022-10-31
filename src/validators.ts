@@ -37,8 +37,16 @@ class ValidatorPkg {
   }
 
   cleanup() {
-    // nothing to cleanup
-    return;
+    // fully nuke the database
+    spawnSync("rm", ["-rf", resolve(process.cwd(), "validator/backups")]);
+
+    const dbFiles = [
+      resolve(process.cwd(), "validator/database.db"),
+      resolve(process.cwd(), "validator/metrics.db")
+    ];
+    for (const filepath of dbFiles) {
+      spawnSync("rm", ["-f", filepath]);
+    }
   }
 
 }
