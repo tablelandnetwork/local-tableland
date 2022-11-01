@@ -45,7 +45,7 @@ class LocalTableland {
     if (typeof config.registryDir === "string" && config.registryDir) {
       this.registryDir = config.registryDir;
     } else {
-      this.registryDir = defaultRegistryDir();
+      this.registryDir = await defaultRegistryDir();
     }
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
