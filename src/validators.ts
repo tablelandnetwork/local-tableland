@@ -3,6 +3,10 @@ import { join, resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import { logSync } from "./util.js";
 
+// NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
+import { getDirname } from "./get-dirname.js";
+const _dirname = getDirname();
+
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
@@ -31,7 +35,9 @@ class ValidatorPkg {
       throw new Error(`cannot start with platform ${platform}`);
     }
 
-    this.process = spawn(`./validator/bin/${platform}`, ["--dir", `${resolve(process.cwd(), "validator")}`], {
+    const packagedValidatorDir = resolve(_dirname, "../../validator");
+
+    this.process = spawn(`${resolve(packagedValidatorDir, "bin", platform)}`, ["--dir", packagedValidatorDir], {
       detached: true
     });
   }

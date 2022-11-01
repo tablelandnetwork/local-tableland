@@ -4,9 +4,9 @@ import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { ethers } from "ethers";
 import { chalk } from "./chalk.js";
+
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
-
 const _dirname = getDirname();
 
 export type ConfigDescriptor = {

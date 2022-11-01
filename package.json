@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.0-pre13.1",
+  "version": "0.0.0-pre13.3",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -34,7 +34,8 @@
     "registry/hardhat.config.js",
     "registry/tsconfig.json",
     "registry/contracts/*",
-    "registry/scripts/*"
+    "registry/scripts/*",
+    "validator/bin/*"
   ],
   "scripts": {
     "postinstall": "mkdir -p registry && cd registry && npm install",
