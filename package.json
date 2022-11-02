@@ -40,7 +40,7 @@
   ],
   "scripts": {
     "postinstall": "mkdir -p registry && cd registry && npm install",
-    "test": "npm run build:esm && node --experimental-fetch --experimental-vm-modules ./node_modules/mocha/bin/mocha --bail",
+    "test": "npm run build && node --experimental-fetch --experimental-vm-modules ./node_modules/mocha/bin/mocha --bail",
     "lint": "eslint src/ test/ --ext .js,.ts,.mjs",
     "prepublishOnly": "npm run build",
     "prettier": "prettier '**/*.{ts,json,md}' --check",
