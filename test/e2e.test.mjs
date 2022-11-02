@@ -9,22 +9,11 @@ import { getAccounts } from "../dist/esm/util.js";
 chai.use(chaiAsPromised);
 const expect = chai.expect;
 
-const __dirname = path.resolve(path.dirname(""));
-// TODO: we were using these tests to check the validator's OAS spec via
-// copy copying the file during local tableland startup. Now that is a dev
-// product, these kind of tests need to be separated
-spawnSync("mkdir", ["./tmp"]);
-spawnSync("cp", [
-  join(__dirname, "../go-tableland", "tableland-openapi-spec.yaml"),
-  "./tmp",
-]);
-
 const accounts = getAccounts();
 
-// NOTE: these tests require the a local Tableland is already running
 describe("Validator, Chain, and SDK work end to end", function () {
-  // These tests take a bit longer than normal since we are usually waiting for blocks to finalize etc...
-  this.timeout(15000); // TODO: use a programatic instance of l.t.
+  // These tests take a bit longer than normal since we are running them against an actual network
+  this.timeout(20000);
   it("Creates a table that can be read from", async function () {
     const signer = accounts[1];
     const tableland = await getTableland(signer);
