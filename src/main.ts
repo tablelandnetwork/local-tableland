@@ -158,8 +158,8 @@ class LocalTableland {
     }
   }
 
-  // module consumers can cal await this method if they want
-  // to wait until the network is started to do something
+  // module consumers can await this method if they want to
+  // wait until the network fully started to do something
   isReady() {
     if (this.ready) return Promise.resolve();
 
