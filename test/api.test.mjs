@@ -10,15 +10,7 @@ import {
 } from "./util.mjs";
 import { getAccounts } from "../dist/esm/util.js";
 
-const __dirname = path.resolve(path.dirname(""));
-// TODO: we were using these tests to check the validator's OAS spec via
-// copy copying the file during local tableland startup. Now that is a dev
-// product, these kind of tests need to be separated
-spawnSync("mkdir", ["./tmp"]);
-spawnSync("cp", [
-  join(__dirname, "../go-tableland", "tableland-openapi-spec.yaml"),
-  "./tmp",
-]);
+const _dirname = path.resolve(path.dirname(""));
 
 // TODO: the open api spec file describes the Validator json response schemas, and this is testing that the response
 //       matches, but the respnse comes from the JS-SDK which reshapes the schema.
@@ -29,6 +21,16 @@ describe.skip("Validator gateway server", function () {
   before(async function () {
     // setup takes a bit longer than normal since we are usually waiting for blocks to finalize etc...
     this.timeout(15000);
+
+    // TODO: we were using these tests to check the validator's OAS spec via
+    // copy copying the file during local tableland startup. Now that is a dev
+    // product, these kind of tests need to be separated
+    spawnSync("mkdir", ["./tmp"]);
+    spawnSync("cp", [
+      join(_dirname, "../go-tableland", "tableland-openapi-spec.yaml"),
+      "./tmp",
+    ]);
+
     const accounts = getAccounts();
     const signer0 = accounts[10];
     const tableland0 = getTableland(signer0);
@@ -78,48 +80,48 @@ describe.skip("Validator gateway server", function () {
     transactionHash = txnHash;
   });
 
-  const tests = loadSpecTestData(
-    path.join(__dirname, "tmp", "tableland-openapi-spec.yaml")
-  );
+  // const tests = loadSpecTestData(
+  //   path.join(_dirname, "tmp", "tableland-openapi-spec.yaml")
+  // );
 
-  tests.forEach(async function (_test) {
-    it(`route ${_test.methodName.toUpperCase()} ${_test.name} is defined in spec`, async function () {
-      const payload = {
-        method: _test.methodName.toUpperCase(),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      };
+  // tests.forEach(async function (_test) {
+  //   it(`route ${_test.methodName.toUpperCase()} ${_test.name} is defined in spec`, async function () {
+  //     const payload = {
+  //       method: _test.methodName.toUpperCase(),
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     };
 
-      const routeTemplateData = {
-        chainID: 31337,
-        id: 1,
-        address: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", // Hardhat #1
-        readStatement: "SELECT * FROM healthbot_31337_1",
-        tableName: `test_schema_route_31337_${schemaTableId}`,
-        hash: tableHash,
-      };
+  //     const routeTemplateData = {
+  //       chainID: 31337,
+  //       id: 1,
+  //       address: "0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266", // Hardhat #1
+  //       readStatement: "SELECT * FROM healthbot_31337_1",
+  //       tableName: `test_schema_route_31337_${schemaTableId}`,
+  //       hash: tableHash,
+  //     };
 
-      // Cannot have a body on a GET/HEAD request
-      if (_test.body) {
-        // For some of the example requests we need to inject values for the chain tests are using
-        if (_test.body.params && _test.body.params[0].txn_hash) {
-          _test.body.params[0].txn_hash = transactionHash;
-        }
-        if (_test.body.method === "tableland_setController") {
-          _test.body.params[0].token_id = controllerTableId;
-        }
-        payload.body = JSON.stringify(_test.body);
-      }
+  //     // Cannot have a body on a GET/HEAD request
+  //     if (_test.body) {
+  //       // For some of the example requests we need to inject values for the chain tests are using
+  //       if (_test.body.params && _test.body.params[0].txn_hash) {
+  //         _test.body.params[0].txn_hash = transactionHash;
+  //       }
+  //       if (_test.body.method === "tableland_setController") {
+  //         _test.body.params[0].token_id = controllerTableId;
+  //       }
+  //       payload.body = JSON.stringify(_test.body);
+  //     }
 
-      const route = _test.route(routeTemplateData);
-      const res = await fetch(`${_test.host}${route}`, payload);
+  //     const route = _test.route(routeTemplateData);
+  //     const res = await fetch(`${_test.host}${route}`, payload);
 
-      expect(typeof _test.response).not.to.eql("undefined");
+  //     expect(typeof _test.response).not.to.eql("undefined");
 
-      if (route === "/rpc") return await testRpcResponse(res, _test);
-      await testHttpResponse(res, _test.response);
-    });
-  });
+  //     if (route === "/rpc") return await testRpcResponse(res, _test);
+  //     await testHttpResponse(res, _test.response);
+  //   });
+  // });
 });
