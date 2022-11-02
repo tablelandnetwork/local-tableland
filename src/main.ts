@@ -5,7 +5,7 @@
 import { spawn, spawnSync, ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
 import { chalk } from "./chalk.js";
-import { ValidatorDev, ValidatorPkg } from "./validators.js"
+import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
   defaultRegistryDir,
@@ -16,7 +16,6 @@ import {
   getAccounts,
   logSync,
 } from "./util.js";
-
 
 class LocalTableland {
   config;
@@ -55,9 +54,7 @@ class LocalTableland {
 
   async #_start() {
     if (!this.registryDir) {
-      throw new Error(
-        "cannot start a local network without Registry"
-      );
+      throw new Error("cannot start a local network without Registry");
     }
 
     // make sure we are starting fresh
@@ -99,7 +96,6 @@ class LocalTableland {
       )
     );
 
-
     // TODO: need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
 
@@ -108,7 +104,9 @@ class LocalTableland {
     this.validator = new ValidatorClass(this.validatorDir);
     this.validator.start();
 
-    if (!this.validator.process) throw new Error("could not start Validator process");
+    if (!this.validator.process) {
+      throw new Error("could not start Validator process");
+    }
 
     this.validator.process.on("error", (err) => {
       throw new Error(`validator errored with: ${err}`);
@@ -116,19 +114,23 @@ class LocalTableland {
 
     const validatorReadyEvent = "validator ready";
     // this process should keep running until we kill it
-    pipeNamedSubprocess(chalk.yellow.bold("Validator"), this.validator.process, {
-      // use events to indicate when the underlying process is finished
-      // initializing and is ready to participate in the Tableland network
-      readyEvent: validatorReadyEvent,
-      emitter: this.initEmitter,
-      message: "processing height",
-      verbose: this.verbose,
-      silent: this.silent,
-      fails: {
-        message: "Cannot connect to the Docker daemon",
-        hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?",
-      },
-    });
+    pipeNamedSubprocess(
+      chalk.yellow.bold("Validator"),
+      this.validator.process,
+      {
+        // use events to indicate when the underlying process is finished
+        // initializing and is ready to participate in the Tableland network
+        readyEvent: validatorReadyEvent,
+        emitter: this.initEmitter,
+        message: "processing height",
+        verbose: this.verbose,
+        silent: this.silent,
+        fails: {
+          message: "Cannot connect to the Docker daemon",
+          hint: "Looks like we cannot connect to Docker.  Do you have the Docker running?",
+        },
+      }
+    );
 
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);

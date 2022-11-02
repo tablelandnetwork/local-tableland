@@ -62,8 +62,8 @@ const go = async function () {
   const tableland = new LocalTableland(opts);
 
   process.on("SIGINT", async () => {
-    console.log("got SIGINT, killing...")
-    await tableland.shutdown()
+    console.log("got SIGINT, killing...");
+    await tableland.shutdown();
   });
 
   await tableland.start();

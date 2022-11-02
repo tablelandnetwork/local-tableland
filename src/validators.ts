@@ -11,35 +11,74 @@ const _dirname = getDirname();
 // store the Validator config file in memory, so we can restore it during cleanup
 let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
-// TODO: how do we determine if these builds all work?
+// ref for all possilbe values of process.platform
 const platformMap = {
   aix: "",
-  darwin: "darwin",
-  freebsd: "linux",
-  linux: "linux",
-  openbsd: "linux",
-  netbsd: "linux",
+  darwin: "",
+  freebsd: "",
+  linux: "",
+  openbsd: "",
+  netbsd: "",
   sunos: "",
-  win32: "windows",
-  cygwin: "windows",
+  win32: "",
+  cygwin: "",
   android: "",
   haiku: "",
+};
+
+// TODO: what combos do we want to support here? Seems like 5 or 6 might cover pretty much everyone.
+const archMap = {
+  arm: platformMap, // TODO: not supported yet,
+  arm64: platformMap, // TODO: not supported yet,
+  ia32: platformMap, // TODO: not supported yet,
+  mips: platformMap, // TODO: not supported yet,
+  mipsel: platformMap, // TODO: not supported yet,
+  ppc: platformMap, // TODO: not supported yet,
+  ppc64: platformMap, // TODO: not supported yet,
+  s390: platformMap, // TODO: not supported yet,
+  s390x: platformMap, // TODO: not supported yet,
+
+  // a.k.a. amd64
+  x64: {
+    aix: "",
+    darwin: "darwin",
+    freebsd: "linux",
+    linux: "linux",
+    openbsd: "linux",
+    netbsd: "linux",
+    sunos: "",
+    win32: "windows",
+    cygwin: "windows",
+    android: "",
+    haiku: "",
+  },
 };
 
 class ValidatorPkg {
   process?: ChildProcess;
 
   start() {
-    const platform = platformMap[process.platform];
-    if (!platform) {
-      throw new Error(`cannot start with platform ${platform}`);
+    const arch = archMap[process.arch];
+    if (!arch) {
+      throw new Error(`cannot start with: arch ${process.arch}`);
+    }
+
+    const binName = arch[process.platform];
+    if (!binName) {
+      throw new Error(
+        `cannot start with: arch ${process.arch}, platform ${process.platform}`
+      );
     }
 
     const packagedValidatorDir = resolve(_dirname, "../../validator");
 
-    this.process = spawn(`${resolve(packagedValidatorDir, "bin", platform)}`, ["--dir", packagedValidatorDir], {
-      detached: true
-    });
+    this.process = spawn(
+      `${resolve(packagedValidatorDir, "bin", binName)}`,
+      ["--dir", packagedValidatorDir],
+      {
+        detached: true,
+      }
+    );
   }
 
   cleanup() {
@@ -48,13 +87,12 @@ class ValidatorPkg {
 
     const dbFiles = [
       resolve(process.cwd(), "validator/database.db"),
-      resolve(process.cwd(), "validator/metrics.db")
+      resolve(process.cwd(), "validator/metrics.db"),
     ];
     for (const filepath of dbFiles) {
       spawnSync("rm", ["-f", filepath]);
     }
   }
-
 }
 
 class ValidatorDev {
@@ -63,7 +101,7 @@ class ValidatorDev {
 
   constructor(validatorPath?: string) {
     if (!validatorPath) throw new Error("must supply path to validator");
-    this.validatorDir = validatorPath
+    this.validatorDir = validatorPath;
   }
 
   start() {
@@ -126,7 +164,6 @@ class ValidatorDev {
       writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
     }
   }
-
 }
 
 export { ValidatorDev, ValidatorPkg };
