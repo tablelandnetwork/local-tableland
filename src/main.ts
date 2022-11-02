@@ -20,6 +20,8 @@ import {
 class LocalTableland {
   config;
   initEmitter;
+  ready: boolean = false;
+  #_readyResolves: Function[] = [];
   registry?: ChildProcess;
   validator?: ValidatorDev | ValidatorPkg;
 
@@ -134,6 +136,7 @@ class LocalTableland {
 
     // wait until initialization is done
     await waitForReady(validatorReadyEvent, this.initEmitter);
+    await this.#_setReady();
 
     if (this.silent) return;
 
@@ -143,6 +146,28 @@ class LocalTableland {
     console.log("        /              \\");
     console.log("       /                \\");
     console.log("______/                  \\______\n\n");
+  }
+
+  async #_setReady() {
+    this.ready = true;
+    while (this.#_readyResolves.length) {
+      // readyResolves is an array of the resolve functions for all registered
+      // promises we want to pop and call each of them synchronously
+      const resolve = this.#_readyResolves.pop();
+      if (typeof resolve === "function") resolve();
+    }
+  }
+
+  // module consumers can cal await this method if they want
+  // to wait until the network is started to do something
+  isReady() {
+    if (this.ready) return Promise.resolve();
+
+    const prom = new Promise((resolve) => {
+      this.#_readyResolves.push(resolve);
+    });
+
+    return prom;
   }
 
   async shutdown() {
