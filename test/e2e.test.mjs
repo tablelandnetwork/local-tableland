@@ -1,6 +1,3 @@
-import { spawnSync } from "node:child_process";
-import { join } from "node:path";
-import path from "path";
 import chai from "chai";
 import chaiAsPromised from "chai-as-promised";
 import { getTableland } from "./util.mjs";
