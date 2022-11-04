@@ -236,7 +236,7 @@ export const waitForReady = function (
 };
 
 export const defaultRegistryDir = async function () {
-  return resolve(_dirname, "../../registry");
+  return resolve(_dirname, "..", "..", "registry");
 };
 
 const defaultProvider = ethers.getDefaultProvider("http://localhost:8545");

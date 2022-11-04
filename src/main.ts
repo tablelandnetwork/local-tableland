@@ -60,6 +60,7 @@ class LocalTableland {
     }
 
     // make sure we are starting fresh
+    // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
     // Run a local hardhat node
@@ -104,6 +105,10 @@ class LocalTableland {
     const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
 
     this.validator = new ValidatorClass(this.validatorDir);
+
+    // run this before starting in case the last instance of the validator didn't get cleanup after
+    // this might be needed if a test runner force quits the parent local-tableland process
+    this.validator.cleanup();
     this.validator.start();
 
     if (!this.validator.process) {

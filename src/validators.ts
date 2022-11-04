@@ -56,6 +56,7 @@ const archMap = {
 
 class ValidatorPkg {
   process?: ChildProcess;
+  validatorDir = resolve(_dirname, "..", "..", "validator");
 
   start() {
     const arch = archMap[process.arch];
@@ -70,24 +71,22 @@ class ValidatorPkg {
       );
     }
 
-    const packagedValidatorDir = resolve(_dirname, "../../validator");
-
     this.process = spawn(
-      `${resolve(packagedValidatorDir, "bin", binName)}`,
-      ["--dir", packagedValidatorDir],
+      `${resolve(this.validatorDir, "bin", binName)}`,
+      ["--dir", this.validatorDir],
       {
         detached: true,
       }
     );
   }
 
+  // fully nuke the database
   cleanup() {
-    // fully nuke the database
-    spawnSync("rm", ["-rf", resolve(process.cwd(), "validator/backups")]);
+    spawnSync("rm", ["-rf", resolve(this.validatorDir, "backups")]);
 
     const dbFiles = [
-      resolve(process.cwd(), "validator/database.db"),
-      resolve(process.cwd(), "validator/metrics.db"),
+      resolve(this.validatorDir, "database.db"),
+      resolve(this.validatorDir, "metrics.db"),
     ];
     for (const filepath of dbFiles) {
       spawnSync("rm", ["-f", filepath]);
@@ -108,7 +107,7 @@ class ValidatorDev {
     // Add an empty .env file to the validator. The Validator expects this to exist,
     // but doesn't need any of the values when running a local instance
     writeFileSync(
-      join(this.validatorDir, "/docker/local/api/.env_validator"),
+      join(this.validatorDir, "docker", "local", "api", ".env_validator"),
       " "
     );
 
@@ -117,7 +116,10 @@ class ValidatorDev {
     //       resolved we may be able to refactor alot of this
     const configFilePath = join(
       this.validatorDir,
-      "/docker/local/api/config.json"
+      "docker",
+      "local",
+      "api",
+      "config.json"
     );
     const configFileStr = readFileSync(configFilePath).toString();
     const validatorConfig = JSON.parse(configFileStr);
@@ -146,9 +148,9 @@ class ValidatorDev {
     spawnSync("docker", ["volume", "prune", "-f"]);
 
     const dbFiles = [
-      join(this.validatorDir, "/docker/local/api/database.db"),
-      join(this.validatorDir, "/docker/local/api/database.db-shm"),
-      join(this.validatorDir, "/docker/local/api/database.db-wal"),
+      join(this.validatorDir, "docker", "local", "api", "database.db"),
+      join(this.validatorDir, "docker", "local", "api", "database.db-shm"),
+      join(this.validatorDir, "docker", "local", "api", "database.db-wal"),
     ];
 
     for (const filepath of dbFiles) {
@@ -159,7 +161,10 @@ class ValidatorDev {
     if (ORIGINAL_VALIDATOR_CONFIG) {
       const configFilePath = join(
         this.validatorDir,
-        "/docker/local/api/config.json"
+        "docker",
+        "local",
+        "api",
+        "config.json"
       );
       writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
     }
