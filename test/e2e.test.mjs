@@ -148,6 +148,34 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data.rows).to.eql([["tree", "aspen"]]);
   });
 
+  // TODO: this test fails because validator has casing issue
+  // https://github.com/tablelandnetwork/go-tableland/issues/389
+  it.skip("Count rows in a table", async function () {
+    const signer = accounts[1];
+
+    const tableland = await getTableland(signer);
+
+    const prefix = "test_count";
+    const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
+      prefix,
+    });
+
+    const chainId = 31337;
+    const queryableName = `${prefix}_${chainId}_${tableId}`;
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
+    );
+
+    await tableland.write(
+      `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
+    );
+
+    const data = await tableland.read(`SELECT COUNT(*) FROM ${queryableName};`);
+
+    expect(data).to.eql({ columns: [{ name: "COUNT(*)" }], rows: [[2]] });
+  });
+
   it("Read a table with `objects` output", async function () {
     const signer = accounts[1];
 
