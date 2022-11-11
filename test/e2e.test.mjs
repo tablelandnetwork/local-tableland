@@ -7,7 +7,7 @@ const expect = chai.expect;
 
 describe("Validator, Chain, and SDK work end to end", function () {
   const accounts = getAccounts();
-  const lt = new LocalTableland({ silent: false });
+  const lt = new LocalTableland({ silent: true });
 
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(20000);
