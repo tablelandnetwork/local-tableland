@@ -1,11 +1,15 @@
-import { spawn, spawnSync, ChildProcess } from "node:child_process";
+import spawn from "cross-spawn";
+import { ChildProcess } from "node:child_process";
 import { join, resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
+import shell from "shelljs";
 import { logSync } from "./util.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
+
+const spawnSync = spawn.sync;
 
 // TODO: should this be a per instance value?
 // store the Validator config file in memory, so we can restore it during cleanup
@@ -82,14 +86,14 @@ class ValidatorPkg {
 
   // fully nuke the database
   cleanup() {
-    spawnSync("rm", ["-rf", resolve(this.validatorDir, "backups")]);
+    shell.rm("-rf", resolve(this.validatorDir, "backups"));
 
     const dbFiles = [
       resolve(this.validatorDir, "database.db"),
       resolve(this.validatorDir, "metrics.db"),
     ];
     for (const filepath of dbFiles) {
-      spawnSync("rm", ["-f", filepath]);
+      shell.rm("-f", filepath);
     }
   }
 }
