@@ -1,9 +1,10 @@
 /**
  *  Run end to end Tableland
  **/
-
-import { spawn, spawnSync, ChildProcess } from "node:child_process";
+import spawn from "cross-spawn";
+import { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import shell from "shelljs";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
@@ -17,6 +18,8 @@ import {
   getConnection,
   logSync,
 } from "./util.js";
+
+const spawnSync = spawn.sync;
 
 class LocalTableland {
   config;
@@ -211,7 +214,7 @@ class LocalTableland {
   // cleanup should restore everything to the starting state.
   // e.g. remove docker images and database backups
   #_cleanup() {
-    spawnSync("rm", ["-rf", "./tmp"]);
+    shell.rm("-rf", "./tmp");
 
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;
