@@ -52,7 +52,7 @@ const archMap = {
     netbsd: "linux",
     sunos: "",
     win32: "windows",
-    cygwin: "windows",
+    cygwin: "",
     android: "",
     haiku: "",
   },

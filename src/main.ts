@@ -17,6 +17,7 @@ import {
   getAccounts,
   getConnection,
   logSync,
+  isWindows,
 } from "./util.js";
 
 const spawnSync = spawn.sync;
@@ -68,10 +69,14 @@ class LocalTableland {
     this.#_cleanup();
 
     // Run a local hardhat node
-    this.registry = spawn("npx", ["hardhat", "node"], {
-      detached: true,
-      cwd: this.registryDir,
-    });
+    this.registry = spawn(
+      isWindows() ? "npx.cmd" : "npx",
+      ["hardhat", "node"],
+      {
+        detached: true,
+        cwd: this.registryDir,
+      }
+    );
 
     this.registry.on("error", (err) => {
       throw new Error(`registry errored with: ${err}`);
@@ -95,7 +100,7 @@ class LocalTableland {
     // Deploy the Registry to the Hardhat node
     logSync(
       spawnSync(
-        "npx",
+        isWindows() ? "npx.cmd" : "npx",
         ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
         {
           cwd: this.registryDir,
