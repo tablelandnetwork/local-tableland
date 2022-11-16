@@ -27,3 +27,5 @@ artifacts
 .vscode
 .idea
 
+# Openzeppelin files
+.openzeppelin/unknown-*1337.json
