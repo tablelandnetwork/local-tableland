@@ -32,20 +32,20 @@ const platformMap = {
 
 // TODO: what combos do we want to support here? Seems like 5 or 6 might cover pretty much everyone.
 const archMap = {
-  arm: {
+  arm: platformMap, // TODO: not supported yet,
+  arm64: {
     aix: "",
-    darwin: "darwin-arm",
-    freebsd: "linux-arm",
-    linux: "linux-arm",
-    openbsd: "linux-arm",
-    netbsd: "linux-arm",
+    darwin: "darwin-arm64",
+    freebsd: "linux-arm64",
+    linux: "linux-arm64",
+    openbsd: "linux-arm64",
+    netbsd: "linux-arm64",
     sunos: "",
     win32: "",
     cygwin: "",
     android: "",
     haiku: "",
   },
-  arm64: platformMap, // TODO: not supported yet,
   ia32: platformMap, // TODO: not supported yet,
   mips: platformMap, // TODO: not supported yet,
   mipsel: platformMap, // TODO: not supported yet,
