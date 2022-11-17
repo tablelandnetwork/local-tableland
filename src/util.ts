@@ -2,7 +2,7 @@ import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
-import { providers, Wallet } from "ethers";
+import { getDefaultProvider, Wallet } from "ethers";
 import { connect, Connection } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 
@@ -240,19 +240,6 @@ export const defaultRegistryDir = async function () {
   return resolve(_dirname, "..", "..", "registry");
 };
 
-export const getConnections = function (): Connection[] {
-  const conns: Connection[] = [];
-
-  hardhatAccounts.forEach((account) => {
-    const wallet = new Wallet(account);
-    const provider = new providers.JsonRpcProvider("http://127.0.0.1:8545");
-    const signer = wallet.connect(provider);
-    conns.push(connect({ signer, chain: "local-tableland" }));
-  });
-
-  return conns;
-};
-
 const hardhatAccounts = [
   "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
@@ -275,3 +262,17 @@ const hardhatAccounts = [
   "de9be858da4a475276426320d5e9262ecfc3ba460bfac56360bfa6c4c28b4ee0",
   "df57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
+
+export const getConnection = function (account: Wallet): Connection {
+  return connect({ signer: account, chain: "local-tableland" });
+};
+
+export const getAccounts = function (): Wallet[] {
+  // explicitly use 127.0.0.1
+  // TODO: not sure what's going on, but node v18 seems to resolve
+  //       localhost differently in different environments
+  return hardhatAccounts.map((account) => {
+    const wallet = new Wallet(account);
+    return wallet.connect(getDefaultProvider("http://127.0.0.1:8545"));
+  });
+};
