@@ -17,6 +17,7 @@ typechain-types
 
 # Validator artifacts
 validator/*.db
+validator/*.db*
 validator/backups
 
 #Hardhat files
@@ -28,4 +29,4 @@ artifacts
 .idea
 
 # Openzeppelin files
-.openzeppelin/unknown-*1337.json
+registry/.openzeppelin/*
