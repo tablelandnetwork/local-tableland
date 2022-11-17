@@ -120,6 +120,8 @@ class LocalTableland {
     this.validator.cleanup();
     this.validator.start();
 
+    // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
+    //       where the on error listener can be attached.
     if (!this.validator.process) {
       throw new Error("could not start Validator process");
     }
