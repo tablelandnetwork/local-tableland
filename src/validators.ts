@@ -86,10 +86,11 @@ class ValidatorPkg {
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
-
+    console.log("validatorDir", this.validatorDir);
+    const validatorUri = this.validatorDir;
     this.process = spawn(
       `${resolve(this.validatorDir, "bin", binName)}`,
-      ["--dir", this.validatorDir],
+      ["--dir", validatorUri],
       {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
@@ -115,9 +116,9 @@ class ValidatorDev {
   validatorDir: string;
   process?: ChildProcess;
 
-  constructor(validatorPath?: string) {
-    if (!validatorPath) throw new Error("must supply path to validator");
-    this.validatorDir = validatorPath;
+  constructor(validatorDir?: string) {
+    if (!validatorDir) throw new Error("must supply path to validator");
+    this.validatorDir = validatorDir;
   }
 
   start() {

@@ -1,6 +1,6 @@
 {
   "name": "@tableland/local",
-  "version": "0.0.2-pre7",
+  "version": "0.0.2-pre8",
   "description": "Tooling to start a sandboxed Tableland network.",
   "repository": "https://github.com/tablelandnetwork/local-tableland",
   "license": "MIT",
@@ -55,6 +55,7 @@
     "local-tableland": "dist/esm/up.js"
   },
   "dependencies": {
+    "@tableland/sdk": "^3.1.5",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "ethers": "^5.7.2",
@@ -62,7 +63,6 @@
     "yargs": "^17.5.1"
   },
   "devDependencies": {
-    "@tableland/sdk": "^3.1.4",
     "@types/cross-spawn": "^6.0.2",
     "@types/node": "^18.8.4",
     "@types/shelljs": "^0.8.11",
