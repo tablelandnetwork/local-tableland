@@ -345,9 +345,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("write to a table without using the relay", async function () {
     const signer = accounts[1];
 
-    const tableland = getConnection(signer);
-    // Note: This can be removed when rpcRelay is removed
-    tableland.rpcRelay = false;
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = getConnection(signer, { rpcRelay: false });
 
     const prefix = "test_direct_write";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -370,9 +369,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("write without relay statement validates table name prefix", async function () {
     const signer = accounts[1];
 
-    const tableland = getConnection(signer);
-    // Note: This can be removed when rpcRelay is removed
-    tableland.rpcRelay = false;
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = getConnection(signer, { rpcRelay: false });
 
     const prefix = "test_direct_invalid_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -393,16 +391,15 @@ describe("Validator, Chain, and SDK work end to end", function () {
         );
       })()
     ).to.be.rejectedWith(
-      `db query execution failed (code: TABLE_LOOKUP, msg: table prefix lookup for table id: table prefix lookup: no such table: ${queryableName})`
+      `calling ValidateWriteQuery: table prefix doesn't match (exp ${prefix2}, got ${prefix})`
     );
   });
 
   it("write without relay statement validates table ID", async function () {
     const signer = accounts[1];
 
-    const tableland = getConnection(signer);
-    // Note: This can be removed when rpcRelay is removed
-    tableland.rpcRelay = false;
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = getConnection(signer, { rpcRelay: false });
 
     const prefix = "test_direct_invalid_id_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -417,16 +414,15 @@ describe("Validator, Chain, and SDK work end to end", function () {
         );
       })()
     ).to.be.rejectedWith(
-      "calling RelayWriteQuery: sending tx: retryable RunSQL call: contract call: Error: VM Exception while processing transaction: reverted with custom error 'Unauthorized()'"
+      `getting table: failed to get the table: sql: no rows in result set`
     );
   });
 
   it("set controller without relay", async function () {
     const signer = accounts[1];
 
-    const tableland = getConnection(signer);
-    // Note: This can be removed when rpcRelay is removed
-    tableland.rpcRelay = false;
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = getConnection(signer, { rpcRelay: false });
 
     const prefix = "test_create_setcontroller_norelay";
     // `key` is a reserved word in sqlite
@@ -445,9 +441,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("set controller with relay", async function () {
     const signer = accounts[1];
 
-    const tableland = getConnection(signer);
-    // Note: This can be removed when rpcRelay is removed
-    tableland.rpcRelay = true; /* this is default `true`, just being explicit */
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = getConnection(signer, {
+      rpcRelay: true /* this is default `true`, just being explicit */,
+    });
 
     const prefix = "test_create_setcontroller_relay";
     // `key` is a reserved word in sqlite
@@ -488,9 +485,8 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("lock controller without relay returns a transaction hash", async function () {
     const signer = accounts[1];
 
-    const tableland = getConnection(signer);
-    // Note: This can be removed when rpcRelay is removed
-    tableland.rpcRelay = false;
+    // Note: options can be removed when rpcRelay is removed
+    const tableland = getConnection(signer, { rpcRelay: false });
 
     const prefix = "test_create_lockcontroller";
     // `key` is a reserved word in sqlite

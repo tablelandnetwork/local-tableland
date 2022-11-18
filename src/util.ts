@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
-import { connect, Connection } from "@tableland/sdk";
+import { connect, Connection, ConnectOptions } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
@@ -263,14 +263,16 @@ const hardhatAccounts = [
   "df57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
 
-export const getConnection = function (account: Wallet): Connection {
-  return connect({ signer: account, chain: "local-tableland" });
+export const getConnection = function (
+  account: Wallet,
+  options: ConnectOptions = {}
+): Connection {
+  return connect({ signer: account, chain: "local-tableland", ...options });
 };
 
 export const getAccounts = function (): Wallet[] {
-  // explicitly use 127.0.0.1
-  // TODO: not sure what's going on, but node v18 seems to resolve
-  //       localhost differently in different environments
+  // explicitly use IPv4 127.0.0.1
+  // node resolves localhost to IPv4 or IPv6 depending on env
   return hardhatAccounts.map((account) => {
     const wallet = new Wallet(account);
     return wallet.connect(getDefaultProvider("http://127.0.0.1:8545"));
