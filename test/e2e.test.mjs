@@ -393,7 +393,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
         );
       })()
     ).to.be.rejectedWith(
-      `table prefix doesn't match (exp ${prefix2}, got ${prefix})`
+      `db query execution failed (code: TABLE_LOOKUP, msg: table prefix lookup for table id: table prefix lookup: no such table: ${queryableName})`
     );
   });
 
@@ -417,7 +417,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
         );
       })()
     ).to.be.rejectedWith(
-      `getting table: failed to get the table: sql: no rows in result set`
+      "calling RelayWriteQuery: sending tx: retryable RunSQL call: contract call: Error: VM Exception while processing transaction: reverted with custom error 'Unauthorized()'"
     );
   });
 
