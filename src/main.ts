@@ -73,7 +73,8 @@ class LocalTableland {
       isWindows() ? "npx.cmd" : "npx",
       ["hardhat", "node"],
       {
-        detached: true,
+        // we can't run in windows if we use detached mode
+        detached: !isWindows(),
         cwd: this.registryDir,
       }
     );

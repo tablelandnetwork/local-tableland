@@ -3,7 +3,7 @@ import { ChildProcess } from "node:child_process";
 import { join, resolve } from "node:path";
 import { readFileSync, writeFileSync } from "node:fs";
 import shell from "shelljs";
-import { logSync } from "./util.js";
+import { logSync, isWindows } from "./util.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
@@ -91,7 +91,8 @@ class ValidatorPkg {
       `${resolve(this.validatorDir, "bin", binName)}`,
       ["--dir", this.validatorDir],
       {
-        detached: true,
+        // we can't run in windows if we use detached mode
+        detached: !isWindows(),
       }
     );
   }
@@ -152,7 +153,8 @@ class ValidatorDev {
 
     // start the validator
     this.process = spawn("make", ["local-up"], {
-      detached: true,
+      // we can't run in windows if we use detached mode
+      detached: !isWindows(),
       cwd: join(this.validatorDir, "docker"),
     });
   }
