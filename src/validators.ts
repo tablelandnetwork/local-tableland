@@ -86,8 +86,21 @@ class ValidatorPkg {
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
-    console.log("validatorDir", this.validatorDir);
-    const validatorUri = this.validatorDir;
+    // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
+    // unix looks like    /Users/jwagner/Workspaces/textile/github/local-tableland/validator
+    // We have to convert the windows path to a valid URI so that the validator can
+    // use it to create a connection string, basically make windows act like unix.
+    let validatorUri = "";
+    if (isWindows()) {
+      // remove the C:
+      if (this.validatorDir.indexOf("C:") === 0) {
+        validatorUri = this.validatorDir.slice(2);
+      }
+      validatorUri = validatorUri.replace("\\", "/");
+    } else {
+      validatorUri = this.validatorDir;
+    }
+
     this.process = spawn(
       `${resolve(this.validatorDir, "bin", binName)}`,
       ["--dir", validatorUri],
