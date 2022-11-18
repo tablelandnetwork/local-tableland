@@ -3,7 +3,7 @@ import { EventEmitter } from "node:events";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
-import { connect, Connection, ConnectOptions } from "@tableland/sdk";
+import { connect, Connection } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 
 // NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
@@ -263,11 +263,8 @@ const hardhatAccounts = [
   "df57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
 
-export const getConnection = function (
-  account: Wallet,
-  options: ConnectOptions = {}
-): Connection {
-  return connect({ signer: account, chain: "local-tableland", ...options });
+export const getConnection = function (account: Wallet): Connection {
+  return connect({ signer: account, chain: "local-tableland" });
 };
 
 export const getAccounts = function (): Wallet[] {

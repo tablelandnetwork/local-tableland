@@ -1,4 +1,5 @@
 import chai from "chai";
+import { connect } from "@tableland/sdk";
 import { getAccounts, getConnection } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
 
@@ -346,7 +347,11 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const signer = accounts[1];
 
     // Note: options can be removed when rpcRelay is removed
-    const tableland = getConnection(signer, { rpcRelay: false });
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_direct_write";
     const { tableId } = await tableland.create("keyy TEXT, val TEXT", {
@@ -369,8 +374,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("write without relay statement validates table name prefix", async function () {
     const signer = accounts[1];
 
-    // Note: options can be removed when rpcRelay is removed
-    const tableland = getConnection(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_direct_invalid_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -398,8 +407,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("write without relay statement validates table ID", async function () {
     const signer = accounts[1];
 
-    // Note: options can be removed when rpcRelay is removed
-    const tableland = getConnection(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_direct_invalid_id_write";
     await tableland.create("keyy TEXT, val TEXT", { prefix });
@@ -421,8 +434,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("set controller without relay", async function () {
     const signer = accounts[1];
 
-    // Note: options can be removed when rpcRelay is removed
-    const tableland = getConnection(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_create_setcontroller_norelay";
     // `key` is a reserved word in sqlite
@@ -441,8 +458,10 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("set controller with relay", async function () {
     const signer = accounts[1];
 
-    // Note: options can be removed when rpcRelay is removed
-    const tableland = getConnection(signer, {
+    // Note: we can remove this test when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
       rpcRelay: true /* this is default `true`, just being explicit */,
     });
 
@@ -485,8 +504,12 @@ describe("Validator, Chain, and SDK work end to end", function () {
   it("lock controller without relay returns a transaction hash", async function () {
     const signer = accounts[1];
 
-    // Note: options can be removed when rpcRelay is removed
-    const tableland = getConnection(signer, { rpcRelay: false });
+    // Note: use `getConnection` when rpcRelay is removed
+    const tableland = connect({
+      signer,
+      chain: "local-tableland",
+      rpcRelay: false,
+    });
 
     const prefix = "test_create_lockcontroller";
     // `key` is a reserved word in sqlite
