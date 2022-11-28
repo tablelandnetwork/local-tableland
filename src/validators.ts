@@ -176,7 +176,7 @@ class ValidatorDev {
   cleanup() {
     logSync(spawnSync("docker", ["container", "prune", "-f"]));
 
-    spawnSync("docker", ["image", "rm", "docker_api", "-f"]);
+    spawnSync("docker", ["image", "rm", "docker-api", "-f"]);
     spawnSync("docker", ["volume", "prune", "-f"]);
 
     const dbFiles = [
