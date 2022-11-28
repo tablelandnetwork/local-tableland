@@ -111,6 +111,14 @@ class ValidatorPkg {
     );
   }
 
+  shutdown() {
+    // If this Class is imported and run by a test runner then the ChildProcess instances are
+    // sub-processes of a ChildProcess instance which means in order to kill them in a way that
+    // enables graceful shut down they have to run in detached mode and be killed by the pid
+    // @ts-ignore
+    process.kill(-this.validator.process.pid);
+  }
+
   // fully nuke the database
   cleanup() {
     shell.rm("-rf", resolve(this.validatorDir, "backups"));
@@ -169,6 +177,13 @@ class ValidatorDev {
     this.process = spawn("make", ["local-up"], {
       // we can't run in windows if we use detached mode
       detached: !isWindows(),
+      cwd: join(this.validatorDir, "docker"),
+    });
+  }
+
+  shutdown() {
+    // The validator uses make to shutdown when run via docker
+    spawnSync("make", ["local-down"], {
       cwd: join(this.validatorDir, "docker"),
     });
   }
