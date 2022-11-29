@@ -112,11 +112,12 @@ class ValidatorPkg {
   }
 
   shutdown() {
+    if (!this.process) throw new Error("Cannot find validator process");
     // If this Class is imported and run by a test runner then the ChildProcess instances are
     // sub-processes of a ChildProcess instance which means in order to kill them in a way that
     // enables graceful shut down they have to run in detached mode and be killed by the pid
     // @ts-ignore
-    process.kill(-this.validator.process.pid);
+    process.kill(-this.process.pid);
   }
 
   // fully nuke the database
