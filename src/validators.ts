@@ -143,13 +143,6 @@ class ValidatorDev {
   }
 
   start() {
-    // Add an empty .env file to the validator. The Validator expects this to exist,
-    // but doesn't need any of the values when running a local instance
-    writeFileSync(
-      join(this.validatorDir, "docker", "local", "api", ".env_validator"),
-      " "
-    );
-
     // Add the registry address to the Validator config
     // TODO: when https://github.com/tablelandnetwork/go-tableland/issues/317 is
     //       resolved we may be able to refactor alot of this
