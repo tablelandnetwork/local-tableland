@@ -109,6 +109,8 @@ describe("Tests of myContract and associated Apps", function () {
   // more tests...
 ```
 
+There is a full working example of testing a hardhat project here: https://github.com/tablelandnetwork/example-voter/tree/joe/tests/test
+
 ## Setup as a Workspace for Tableland Core Contributing
 
 If you are using this while contributing to the the Validator, or the Registry contract you may find yourself wanting to see if your local changes are working across the entire network. In this case you will want to use this repo in conjunction with the [evm-tableland](https://github.com/tablelandnetwork/evm-tableland) and [go-tableland](https://github.com/tablelandnetwork/go-tableland) repos.
