@@ -39,8 +39,8 @@ const go = async function () {
   // TODO: try `parseSync`
   // @ts-ignore
   if (argv.init) {
-    // If these aren't specified then we want to open a terminal prompt that
-    // will help the user setup their project directory then exit when finished
+    // If init arg is given we want to open a terminal prompt that will
+    // help the user setup their project directory then exit when finished
     await projectBuilder();
     return;
   }
@@ -53,11 +53,10 @@ const go = async function () {
   const opts: Config = {
     validator: argvValidator,
     registry: argvRegistry,
-    // @ts-ignore
-    verbose: argv.verbose,
-    // @ts-ignore
-    silent: argv.silent,
   };
+
+  if (typeof argv.verbose === "boolean") opts.verbose = argv.verbose;
+  if (typeof argv.silent === "boolean") opts.silent = argv.silent;
 
   const tableland = new LocalTableland(opts);
 
