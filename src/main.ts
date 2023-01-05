@@ -112,9 +112,8 @@ class LocalTableland {
       !inDebugMode()
     );
 
-    // TODO: need to determine if we are starting the validator via docker
+    // need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
-
     const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
 
     this.validator = new ValidatorClass(this.validatorDir);
