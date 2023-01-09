@@ -31,11 +31,11 @@ const argv = yargs(hideBin(process.argv)).options({
 }).argv;
 
 const go = async function () {
-  // using these argv ts ignores for the reasons explained in the yargs readme.
+  // casting argv to `any` for the reasons explained in the yargs readme.
   // https://github.com/yargs/yargs/blob/main/docs/typescript.md#typescript-usage-examples
   // TODO: try `parseSync`
-  // @ts-ignore
-  if (argv.init) {
+  const tsArgv = argv as any;
+  if (tsArgv.init) {
     // If init arg is given we want to open a terminal prompt that will
     // help the user setup their project directory then exit when finished
     await projectBuilder();
@@ -44,14 +44,10 @@ const go = async function () {
 
   const opts: Config = {};
 
-  // @ts-ignore
-  if (argv.validator) opts.validator = argv.validator;
-  // @ts-ignore
-  if (argv.registry) opts.registry = argv.registry;
-  // @ts-ignore
-  if (typeof argv.verbose === "boolean") opts.verbose = argv.verbose;
-  // @ts-ignore
-  if (typeof argv.silent === "boolean") opts.silent = argv.silent;
+  if (tsArgv.validator) opts.validator = tsArgv.validator;
+  if (tsArgv.registry) opts.registry = tsArgv.registry;
+  if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
+  if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
 
   const tableland = new LocalTableland(opts);
 
