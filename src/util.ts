@@ -7,6 +7,8 @@ import { getDefaultProvider, Wallet } from "ethers";
 import {
   getBaseUrl,
   Database,
+  Registry,
+  Validator,
   overrideDefaults,
   getChainId,
 } from "@tableland/sdk";
@@ -284,11 +286,23 @@ const hardhatAccounts = [
   "df57089febbacf7ba0bc227dafbffa9fc08a93fdc68e1e42411a14efcf23656e",
 ];
 
-export const getConnection = function (account: Wallet): Database {
+export const getDatabase = function (account: Wallet): Database {
   return new Database({
     signer: account,
     baseUrl: getBaseUrl("local-tableland"),
     autoWait: true,
+  });
+};
+
+export const getRegistry = function (account: Wallet): Registry {
+  return new Registry({
+    signer: account,
+  });
+};
+
+export const getValidator = function (baseUrl?: string): Validator {
+  return new Validator({
+    baseUrl: baseUrl || getBaseUrl("local-tableland"),
   });
 };
 
