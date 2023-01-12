@@ -1,5 +1,4 @@
 import chai from "chai";
-// import { connect } from "@tableland/sdk";
 import {
   getAccounts,
   getDatabase,
@@ -15,7 +14,6 @@ describe("Validator, Chain, and SDK work end to end", function () {
   const accounts = getAccounts();
   const lt = new LocalTableland({
     silent: true,
-    // validatorDir: "../go-tableland",
   });
 
   // These tests take a bit longer than normal since we are running them against an actual network
@@ -33,9 +31,6 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const signer = accounts[1];
     const db = getDatabase(signer);
 
-    // TODO: using exec here, there's quite a few methods that can be used for creating a table,
-    //       and they are scattered throughout these tests atm. We can potentially build in specific
-    //       tests for each method in the future.
     // `key` is a reserved word in sqlite.
     const res = await db.exec(
       `CREATE TABLE test_create_read (keyy TEXT, val TEXT);`
