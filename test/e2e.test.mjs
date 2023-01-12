@@ -8,7 +8,7 @@ const expect = chai.expect;
 describe("Validator, Chain, and SDK work end to end", function () {
   const accounts = getAccounts();
   const lt = new LocalTableland({
-    silent: true,
+    silent: false,
     validatorDir: "../go-tableland",
   });
 
@@ -35,7 +35,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
       `CREATE TABLE test_create_read (keyy TEXT, val TEXT);`
     );
 
-    const data = await tableland.exec(`SELECT * FROM ${res.meta.txn.name};`);
+    const data = await tableland
+      .prepare(`SELECT * FROM ${res.meta.txn.name};`)
+      .all();
     expect(data.results).to.eql([]);
   });
 
@@ -44,8 +46,6 @@ describe("Validator, Chain, and SDK work end to end", function () {
     const signer = accounts[1];
     const tableland = getConnection(signer);
 
-    // TODO: as mentioned above, using prepare("...").run() in this test,
-    //       but there's other ways and methods to do create then insert.
     const { meta: createMetadata } = await tableland
       .prepare("CREATE TABLE test_create_write (keyy TEXT, val TEXT);")
       .run();
@@ -60,8 +60,6 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(insertRes.success).to.eql(true);
     expect(typeof insertRes.meta.duration).to.eql("number");
 
-    // TODO: to get results you need to do prepare().all() or maybe prepare.first()?
-    //       calls like exec() and prepare().run() don't include results.
     const readRes = await tableland
       .prepare(`SELECT * FROM ${tableName};`)
       .all();
@@ -151,7 +149,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
 
   // TODO: make this a test for some kind of results formatting function
   //       assuming that is still appropriate
-  it.skip("read a table with `table` output", async function () {
+  it("read via `raw` method returns data with `table` output", async function () {
     const signer = accounts[1];
     const tableland = getConnection(signer);
 
@@ -170,10 +168,9 @@ describe("Validator, Chain, and SDK work end to end", function () {
       .prepare(`SELECT * FROM ${queryableName};`, {
         output: "table",
       })
-      .all();
+      .raw();
 
-    expect(data.results.columns).to.eql([{ name: "keyy" }, { name: "val" }]);
-    expect(data.results.rows).to.eql([["tree", "aspen"]]);
+    expect(data).to.eql([["tree", "aspen"]]);
   });
 
   it("count rows in a table", async function () {
@@ -204,9 +201,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
     expect(data.results).to.eql([{ "count(*)": 2 }]);
   });
 
-  // TODO: make this a test for some kind of results formatting function
-  //       assuming that is still appropriate
-  it.skip("read a table with `objects` output", async function () {
+  it("read a single row with `first` method", async function () {
     const signer = accounts[1];
     const tableland = getConnection(signer);
 
@@ -221,135 +216,17 @@ describe("Validator, Chain, and SDK work end to end", function () {
       )
       .all();
 
-    const data = await tableland
-      .prepare(`SELECT * FROM ${queryableName};`, {
-        output: "objects",
-      })
-      .all();
-
-    expect(data.results).to.eql([{ keyy: "tree", val: "aspen" }]);
-  });
-
-  // TODO: make this a test for some kind of results formatting function
-  //       assuming that is still appropriate
-  it.skip("read a single row with `unwrap` option", async function () {
-    const signer = accounts[1];
-    const tableland = getConnection(signer);
-
-    const { meta: createMetadata } = await tableland
-      .prepare("CREATE TABLE test_read (keyy TEXT, val TEXT);")
-      .run();
-    const queryableName = createMetadata.txn?.name ?? "";
-
-    await tableland
-      .prepare(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      )
-      .all();
-
-    const data = await tableland
-      .prepare(`SELECT * FROM ${queryableName};`, {
-        unwrap: true,
-        output: "objects",
-      })
-      .all();
-
-    expect(data.results).to.eql({ keyy: "tree", val: "aspen" });
-  });
-
-  // TODO: make this a test for some kind of results formatting function
-  //       assuming that is still appropriate
-  it.skip("read two rows with `unwrap` option fails", async function () {
-    const signer = accounts[1];
-    const tableland = getConnection(signer);
-
-    const { meta: createMetadata } = await tableland
-      .prepare("CREATE TABLE test_read (keyy TEXT, val TEXT);")
-      .run();
-    const queryableName = createMetadata.txn?.name ?? "";
-
-    await tableland
-      .prepare(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      )
-      .all();
     await tableland
       .prepare(
         `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'pine')`
       )
       .all();
 
-    await expect(
-      (async function () {
-        await tableland
-          .prepare(`SELECT * FROM ${queryableName};`, {
-            unwrap: true,
-            output: "objects",
-          })
-          .all();
-      })()
-    ).to.be.rejectedWith(
-      "unwrapped results with more than one row aren't supported in JSON RPC API"
-    );
-  });
-
-  // TODO: make this a test for some kind of results formatting function
-  //       assuming that is still appropriate
-  it.skip("read with `extract` option", async function () {
-    const signer = accounts[1];
-    const tableland = getConnection(signer);
-
-    const { meta: createMetadata } = await tableland
-      .prepare("CREATE TABLE test_read_extract (keyy TEXT, val TEXT);")
-      .run();
-    const queryableName = createMetadata.txn?.name ?? "";
-
-    await tableland
-      .prepare(`INSERT INTO ${queryableName} (val) VALUES ('aspen')`)
-      .all();
-    await tableland
-      .prepare(`INSERT INTO ${queryableName} (val) VALUES ('pine')`)
-      .all();
-
     const data = await tableland
-      .prepare(`SELECT * FROM ${queryableName};`, {
-        extract: true,
-        output: "objects",
-      })
-      .all();
+      .prepare(`SELECT * FROM ${queryableName};`)
+      .first();
 
-    expect(data.results).to.eql(["aspen", "pine"]);
-  });
-
-  // TODO: make this a test for some kind of results formatting function
-  //       assuming that is still appropriate
-  it.skip("read table with two columns with `extract` option fails", async function () {
-    const signer = accounts[1];
-    const tableland = getConnection(signer);
-
-    const { meta: createMetadata } = await tableland
-      .prepare("CREATE TABLE test_read (keyy TEXT, val TEXT);")
-      .run();
-    const queryableName = createMetadata.txn?.name ?? "";
-
-    await tableland
-      .prepare(
-        `INSERT INTO ${queryableName} (keyy, val) VALUES ('tree', 'aspen')`
-      )
-      .all();
-
-    await expect(
-      (async function () {
-        await tableland
-          .prepare(`SELECT * FROM ${queryableName};`, {
-            extract: true,
-            output: "objects",
-          })
-          .all();
-      })()
-    ).to.be.rejectedWith(
-      "can only extract values for result sets with one column but this has 2"
-    );
+    expect(data).to.eql({ keyy: "tree", val: "aspen" });
   });
 
   // TODO: what happend to `list`? is it gone or replaced?
