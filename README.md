@@ -33,7 +33,7 @@ Under the hood Local Tableland is running an in memory instance of Hardhat Netwo
 Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) with a local-tableland sandboxed network is straight forward. In the SDK connection options simply specify `chain: 'local-tableland'`.
 For example:
 
-```
+```js
 import { connect } from '@tableland/sdk';
 const tableland = connect({ chain: 'local-tableland' });
 ```
@@ -42,7 +42,7 @@ const tableland = connect({ chain: 'local-tableland' });
 
 If you are using Local Tableland to run tests for your project, or want to start a sandbox network programmatically for any reason, the following example covers the basics
 
-```
+```js
 import { LocalTableland } from "@tableland/local";
 
 const lt = new LocalTableland({ /* silent or verbose can be set via an options object as the first arg */ });
@@ -67,7 +67,7 @@ Using Local Tableland to test a Hardhat project is straight forward. The one key
 
 Consider the basic example below
 
-```
+```js
 import { after, before, describe, test } from "mocha";
 import { LocalTableland, getAccounts } from "@tableland/local";
 
