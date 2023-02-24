@@ -34,8 +34,8 @@ Using the [JS SDK](https://github.com/tablelandnetwork/js-tableland) with a loca
 For example:
 
 ```js
-import { connect } from '@tableland/sdk';
-const tableland = connect({ chain: 'local-tableland' });
+import { connect } from "@tableland/sdk";
+const tableland = connect({ chain: "local-tableland" });
 ```
 
 ## Programmatic Usage
@@ -45,7 +45,9 @@ If you are using Local Tableland to run tests for your project, or want to start
 ```js
 import { LocalTableland } from "@tableland/local";
 
-const lt = new LocalTableland({ /* silent or verbose can be set via an options object as the first arg */ });
+const lt = new LocalTableland({
+  /* silent or verbose can be set via an options object as the first arg */
+});
 
 const go = async function () {
   lt.start();
@@ -56,7 +58,7 @@ const stop = async function () {
   await lt.shutdown();
 };
 
-go().catch(err => console.log(err));
+go().catch((err) => console.log(err));
 ```
 
 **Best practices for testing is to start a single local network and run all of your tests against it, i.e. don't create an instance for each test. Doing this will speed up test execution significantly.**
