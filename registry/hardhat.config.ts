@@ -18,6 +18,7 @@ const config: HardhatUserConfig = {
         auto: !(process.env.HARDHAT_DISABLE_AUTO_MINING === "true"),
         interval: [100, 3000],
       },
+      allowUnlimitedContractSize: true,
     },
   },
   baseURIs,
