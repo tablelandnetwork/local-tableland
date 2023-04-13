@@ -18,6 +18,7 @@ const config: HardhatUserConfig = {
         auto: !(process.env.HARDHAT_DISABLE_AUTO_MINING === "true"),
         interval: [100, 3000],
       },
+      gas: 40 * 1000 * 1000,
       allowUnlimitedContractSize: true,
     },
   },
