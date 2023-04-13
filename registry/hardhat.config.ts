@@ -10,7 +10,16 @@ import {
 } from "@tableland/evm/network";
 
 const config: HardhatUserConfig = {
-  solidity: "0.8.17",
+  solidity: {
+    version: "0.8.19",
+    settings: {
+      // Matching this to the registry in evm-tableland
+      optimizer: {
+        enabled: true,
+        runs: 9999999,
+      },
+    },
+  },
   networks: {
     // we need automining for the validator event processor to work
     hardhat: {
