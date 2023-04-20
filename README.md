@@ -16,7 +16,7 @@
 - [Install](#install)
 - [Usage](#usage)
   - [Silencing logs](#silencing-logs)
-  - [Wallet \& endpoint configuration](#wallet--endpoint-configuration)
+  - [Wallet \& Endpoint Configuration](#wallet--endpoint-configuration)
   - [Using with the Tableland SDK](#using-with-the-tableland-sdk)
   - [Using with a Hardhat Project](#using-with-a-hardhat-project)
   - [Core Protocol Development](#core-protocol-development)
@@ -62,7 +62,7 @@ npx local-tableland --silent
 npx local-tableland --verbose
 ```
 
-### Wallet & endpoint configuration
+### Wallet & Endpoint Configuration
 
 Under the hood, Local Tableland is running an in-memory instance of a Hardhat network. To connect and interact with the Hardhat network (e.g., using a browser wallet), you'll need to use the following:
 
