@@ -57,7 +57,7 @@
   },
   "dependencies": {
     "@tableland/sdk": "^4.2.2",
-    "@tableland/validator": "^1.5.0-beta-1",
+    "@tableland/validator": "^1.5.0",
     "cross-spawn": "^7.0.3",
     "enquirer": "^2.3.6",
     "ethers": "^5.7.2",
