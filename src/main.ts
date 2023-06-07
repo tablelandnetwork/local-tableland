@@ -107,16 +107,19 @@ class LocalTableland {
     await waitForReady(registryReadyEvent, this.initEmitter);
 
     // Deploy the Registry to the Hardhat node
-    logSync(
-      spawnSync(
-        isWindows() ? "npx.cmd" : "npx",
-        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
-        {
-          cwd: this.registryDir,
-        }
-      ),
-      !inDebugMode()
+    const deployPs = spawnSync(
+      isWindows() ? "npx.cmd" : "npx",
+      ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+      {
+        cwd: this.registryDir,
+      }
     );
+
+    logSync(deployPs, {
+      shouldThrow: !inDebugMode(),
+      showLog: this.verbose ?? false,
+      prefix: chalk.purple.bold("Contract Deploy"),
+    });
 
     // need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...

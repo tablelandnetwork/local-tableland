@@ -1,6 +1,7 @@
 import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
+import { EOL } from "node:os";
 import { Readable } from "node:stream";
 import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
@@ -146,13 +147,24 @@ export const inDebugMode = function () {
 
 export const logSync = function (
   prcss: SpawnSyncReturns<Buffer>,
-  shouldThrow = true
+  options = {
+    shouldThrow: true,
+    showLog: false,
+    prefix: "Log Sync",
+  }
 ) {
   // make sure this blows up if Docker isn't running
   const psError = prcss.stderr && prcss.stderr.toString();
-  if (shouldThrow && psError) {
+  if (options.shouldThrow && psError) {
     console.log(chalk.red(psError));
     throw psError;
+  }
+  if (options.showLog) {
+    const psOut = prcss.stdout && prcss.stdout.toString();
+    const lines = psOut.split(EOL);
+    for (let i = 0; i < lines.length; i++) {
+      console.log(`[${options.prefix}] ${lines[i]}`);
+    }
   }
 };
 
