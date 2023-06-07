@@ -149,7 +149,9 @@ class LocalTableland {
         // initializing and is ready to participate in the Tableland network
         readyEvent: validatorReadyEvent,
         emitter: this.initEmitter,
-        message: "processing height",
+        // TODO: this is pretty brittle, we should refactor and cleanup.
+        // Wait until the healthbot table is created to signal that the local network is ready.
+        message: "executing create-table event",
         verbose: this.verbose,
         silent: this.silent,
         fails: {
