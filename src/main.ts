@@ -117,7 +117,7 @@ class LocalTableland {
 
     logSync(deployPs, {
       shouldThrow: !inDebugMode(),
-      showLog: this.verbose ?? false,
+      showLog: this.silent !== true ?? false,
       prefix: chalk.purple.bold("Contract Deploy"),
     });
 

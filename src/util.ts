@@ -160,6 +160,11 @@ export const logSync = function (
     throw psError;
   }
   if (options.showLog) {
+    const errLines = psError.split(EOL);
+    for (let i = 0; i < errLines.length; i++) {
+      console.error(`[${options.prefix}] ${errLines[i]}`);
+    }
+
     const psOut = prcss.stdout && prcss.stdout.toString();
     const lines = psOut.split(EOL);
     for (let i = 0; i < lines.length; i++) {
