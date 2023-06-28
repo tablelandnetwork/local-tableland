@@ -22,9 +22,27 @@ overrideDefaults(getChainId("local-tableland"), {
 
 export type ConfigDescriptor = {
   name: string;
-  env: "VALIDATOR_DIR" | "REGISTRY_DIR" | "VERBOSE" | "SILENT";
-  file: "validatorDir" | "registryDir" | "verbose" | "silent";
-  arg: "validator" | "registry" | "verbose" | "silent";
+  env:
+    | "VALIDATOR_DIR"
+    | "REGISTRY_DIR"
+    | "VERBOSE"
+    | "SILENT"
+    | "FORK"
+    | "FORK_BLOCK_NUMBER";
+  file:
+    | "validatorDir"
+    | "registryDir"
+    | "verbose"
+    | "silent"
+    | "fork"
+    | "forkBlockNumber";
+  arg:
+    | "validator"
+    | "registry"
+    | "verbose"
+    | "silent"
+    | "fork"
+    | "forkBlockNumber";
   isPath: boolean;
 };
 
@@ -60,6 +78,20 @@ const configDescriptors: ConfigDescriptor[] = [
     env: "SILENT",
     file: "silent",
     arg: "silent",
+    isPath: false,
+  },
+  {
+    name: "fork",
+    env: "FORK",
+    file: "fork",
+    arg: "fork",
+    isPath: false,
+  },
+  {
+    name: "forkBlockNumber",
+    env: "FORK_BLOCK_NUMBER",
+    file: "forkBlockNumber",
+    arg: "forkBlockNumber",
     isPath: false,
   },
 ];
