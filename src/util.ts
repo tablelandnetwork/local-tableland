@@ -71,6 +71,8 @@ export type Config = {
   registryDir?: string;
   verbose?: boolean;
   silent?: boolean;
+  fork?: string;
+  forkBlockNumber?: string;
 };
 
 export const buildConfig = function (config: Config) {

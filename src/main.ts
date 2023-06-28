@@ -68,24 +68,35 @@ class LocalTableland {
     }
 
     // make sure we are starting fresh
-    // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // Run a local hardhat node
-    this.registry = spawn(
-      isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node"],
-      {
-        // we can't run in windows if we use detached mode
-        detached: !isWindows(),
-        cwd: this.registryDir,
-        env: {
-          ...process.env,
-          HARDHAT_NETWORK: "hardhat",
-          HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
-        },
+    // There's two ways of signaling a mainnet fork should be used. The `FORK`
+    // env var, or the config has a fork property.  Either way this means we
+    // don't need to deploy the registry, and the validator should listen to
+    // a different contract address, specifically the mainnet address.
+    const shouldFork = !!(process.env.FORK || config.fork);
+    const hardhatCommandArr = ["hardhat", "node"];
+
+    if (config.fork) {
+      hardhatCommandArr.push("--fork");
+      hardhatCommandArr.push(config.fork);
+      if (config.forkBlockNumber) {
+        hardhatCommandArr.push("--fork-block-number");
+        hardhatCommandArr.push(config.forkBlockNumber);
       }
-    );
+    }
+
+    // Run a local hardhat node
+    this.registry = spawn(isWindows() ? "npx.cmd" : "npx", hardhatCommandArr, {
+      // we can't run in windows if we use detached mode
+      detached: !isWindows(),
+      cwd: this.registryDir,
+      env: {
+        ...process.env,
+        HARDHAT_NETWORK: "hardhat",
+        HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
+      },
+    });
 
     this.registry.on("error", (err) => {
       throw new Error(`registry errored with: ${err}`);
@@ -106,18 +117,19 @@ class LocalTableland {
     // wait until initialization is done
     await waitForReady(registryReadyEvent, this.initEmitter);
 
-    // Deploy the Registry to the Hardhat node
-    logSync(
-      spawnSync(
-        isWindows() ? "npx.cmd" : "npx",
-        ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
-        {
-          cwd: this.registryDir,
-        }
-      ),
-      !inDebugMode()
-    );
-
+    if (!shouldFork) {
+      // Deploy the Registry to the Hardhat node
+      logSync(
+        spawnSync(
+          isWindows() ? "npx.cmd" : "npx",
+          ["hardhat", "run", "--network", "localhost", "scripts/deploy.ts"],
+          {
+            cwd: this.registryDir,
+          }
+        ),
+        !inDebugMode()
+      );
+    }
     // need to determine if we are starting the validator via docker
     // and a local repo, or if are running a binary etc...
     const ValidatorClass = this.validatorDir ? ValidatorDev : ValidatorPkg;
@@ -127,7 +139,7 @@ class LocalTableland {
     // run this before starting in case the last instance of the validator didn't get cleanup after
     // this might be needed if a test runner force quits the parent local-tableland process
     this.validator.cleanup();
-    this.validator.start();
+    this.validator.start(shouldFork);
 
     // TODO: It seems like this check isn't sufficient to see if the process is gonna get to a point
     //       where the on error listener can be attached.
