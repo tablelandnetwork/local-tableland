@@ -1,3 +1,4 @@
+import "dotenv/config";
 import chai from "chai";
 import { getAccounts, getDatabase } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
