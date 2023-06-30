@@ -49,4 +49,17 @@ describe("Starting a Fork", function () {
     expect(sessionOne.rig_id).to.eql(1018);
     expect(sessionOne.start_time).to.eql(15967006);
   });
+
+  it("creates a table that can be read from", async function () {
+    const signer = accounts[1];
+    const db = getDatabase(signer);
+
+    // `key` is a reserved word in sqlite.
+    const res = await db.exec(
+      `CREATE TABLE test_create_read (keyy TEXT, val TEXT);`
+    );
+
+    const data = await db.prepare(`SELECT * FROM ${res.meta.txn.name};`).all();
+    expect(data.results).to.eql([]);
+  });
 });
