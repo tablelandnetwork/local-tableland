@@ -19,7 +19,7 @@ describe("Starting a Fork", function () {
   this.timeout(40000);
   before(async function () {
     await lt.start();
-    await new Promise((resolve) => setTimeout(() => resolve(), 20000));
+    await new Promise((resolve) => setTimeout(() => resolve(), 30000));
   });
 
   after(async function () {
@@ -61,5 +61,24 @@ describe("Starting a Fork", function () {
 
     const data = await db.prepare(`SELECT * FROM ${res.meta.txn.name};`).all();
     expect(data.results).to.eql([]);
+  });
+
+  it("updates a table that can be read from", async function () {
+    const signer = accounts[1];
+    const db = getDatabase(signer);
+
+    // `key` is a reserved word in sqlite.
+    const res = await db.exec(
+      `CREATE TABLE test_update_read (keyy TEXT, val TEXT);`
+    );
+
+    await db
+      .prepare(
+        `INSERT INTO ${res.meta.txn.name} (keyy, val) VALUES ('update', 'works');`
+      )
+      .all();
+
+    const data = await db.prepare(`SELECT * FROM ${res.meta.txn.name};`).all();
+    expect(data.results).to.eql([{ keyy: "update", val: "works" }]);
   });
 });

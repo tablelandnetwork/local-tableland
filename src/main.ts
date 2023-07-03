@@ -76,13 +76,26 @@ class LocalTableland {
     // a different contract address, specifically the mainnet address.
     const shouldFork = !!(process.env.FORK || config.fork);
     const hardhatCommandArr = ["hardhat", "node"];
+    const registryEnv = {
+      ...process.env,
+      HARDHAT_NETWORK: "hardhat",
+      HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
+    } as {
+      HARDHAT_NETWORK: string;
+      HARDHAT_UNLIMITED_CONTRACT_SIZE: string;
+      FORK: string | undefined;
+      FORK_BLOCK_NUMBER: string | undefined;
+      TZ?: string | undefined;
+    };
 
     if (config.fork) {
       hardhatCommandArr.push("--fork");
       hardhatCommandArr.push(config.fork);
+      registryEnv.FORK = config.fork;
       if (config.forkBlockNumber) {
         hardhatCommandArr.push("--fork-block-number");
         hardhatCommandArr.push(config.forkBlockNumber);
+        registryEnv.FORK_BLOCK_NUMBER = config.forkBlockNumber;
       }
     }
 
@@ -91,11 +104,7 @@ class LocalTableland {
       // we can't run in windows if we use detached mode
       detached: !isWindows(),
       cwd: this.registryDir,
-      env: {
-        ...process.env,
-        HARDHAT_NETWORK: "hardhat",
-        HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
-      },
+      env: registryEnv,
     });
 
     this.registry.on("error", (err) => {
