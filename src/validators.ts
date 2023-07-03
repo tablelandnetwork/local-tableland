@@ -18,15 +18,19 @@ let ORIGINAL_VALIDATOR_CONFIG: string | undefined;
 
 class ValidatorPkg {
   process?: ChildProcess;
-  validatorDir = resolve(_dirname, "..", "..", "validator");
+  validatorDir = "";
+  validatorCleanDir = resolve(_dirname, "..", "..", "validator", "clean");
+  validatorForkDir = resolve(_dirname, "..", "..", "validator", "fork");
 
-  start() {
+  start(fork?: boolean) {
     const binPath = getBinPath();
     if (!binPath) {
       throw new Error(
         `cannot start with: arch ${process.arch}, platform ${process.platform}`
       );
     }
+
+    this.validatorDir = fork ? this.validatorForkDir : this.validatorCleanDir;
 
     // Get the path to the directory holding the validator config we want to use.
     // Windows looks like C:\Users\tester\Workspaces\test-loc\node_modules\@tableland\local\validator
