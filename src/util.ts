@@ -7,7 +7,7 @@ import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 
-// NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
+// NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
 
