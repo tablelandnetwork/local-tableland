@@ -6,7 +6,7 @@ import { getBinPath } from "@tableland/validator";
 import shell from "shelljs";
 import { logSync, isWindows } from "./util.js";
 
-// NOTE: We are creating this file in the prebuild.sh script so that we can support cjs and esm
+// NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
 
