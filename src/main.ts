@@ -94,11 +94,12 @@ class LocalTableland {
     // You *must* store these in `process.env` to access within the hardhat subprocess
     process.env.HARDHAT_NETWORK = "hardhat";
     process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
+    process.env.HARDHAT_PORT = hardhatPort.toString();
 
     // Run a local hardhat node
     this.registry = spawn(
       isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node"],
+      ["hardhat", "node", "--port", hardhatPort.toString()], // TODO: use a fallback port on conflicts vs. failing on retries
       {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
