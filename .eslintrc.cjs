@@ -14,7 +14,7 @@ module.exports = {
     beforeEach: true,
     afterEach: true,
     describe: true,
-    it: true
+    it: true,
   },
   extends: [
     "standard",
