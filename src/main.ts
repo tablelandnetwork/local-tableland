@@ -9,18 +9,19 @@ import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
-  defaultRegistryDir,
-  getConfigFile,
   Config,
-  pipeNamedSubprocess,
-  waitForReady,
+  checkPortInUse,
+  defaultRegistryDir,
+  inDebugMode,
+  isWindows,
   getAccounts,
+  getConfigFile,
   getDatabase,
   getRegistry,
   getValidator,
   logSync,
-  isWindows,
-  inDebugMode,
+  pipeNamedSubprocess,
+  waitForReady,
 } from "./util.js";
 
 const spawnSync = spawn.sync;
@@ -72,6 +73,21 @@ class LocalTableland {
     // make sure we are starting fresh
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
+
+    // check if the port is in use and retry 5 times (1 second between each)
+    let retries = 0;
+    const port = 8545;
+    while (retries < 5) {
+      const portInUse = await checkPortInUse(port);
+      if (!portInUse) break;
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      retries++;
+    }
+    // throw if all retries failed and port is in use
+    if (retries === 5) {
+      throw new Error(`cannot start a local chain due to port ${port} in use`);
+    }
 
     // Run a local hardhat node
     this.registry = spawn(

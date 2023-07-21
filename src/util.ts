@@ -1,3 +1,4 @@
+import net from "net";
 import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
@@ -319,3 +320,22 @@ export const getAccounts = function (): Wallet[] {
     return wallet.connect(getDefaultProvider("http://127.0.0.1:8545"));
   });
 };
+
+export function checkPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const server = net.createServer();
+
+    server.once("error", function (err: Error & { code?: string }) {
+      if (err.code === "EADDRINUSE") {
+        resolve(true);
+      }
+    });
+
+    server.once("listening", function () {
+      server.close();
+      resolve(false);
+    });
+
+    server.listen(port);
+  });
+}
