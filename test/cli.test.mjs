@@ -62,7 +62,7 @@ describe("Project builder", function () {
   });
 
   it("should do nothing if user says not to", async function () {
-    // Pass input from `choose-no.txt` to `up.js` to answer `yn to prompt
+    // Pass input from `choose-no.txt` to `up.js` to answer `n` to prompt
     const cliOut = shell
       .cat(join(pathToTmp, "..", "test", "choose-no.txt"))
       .exec(join(pathToTmp, "..", "dist", "esm", "up.js --init"));
