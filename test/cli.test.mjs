@@ -11,7 +11,7 @@ describe("Project builder", function () {
   const pathToTmp = join(cwd, "tmp");
 
   // Tests need some extra time running `up.js` (async CLI inputs & spins up LT)
-  this.timeout(12000);
+  this.timeout(20000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
   beforeEach(function () {
     // Create tmp dir to run the project builder in
     shell.rm("-rf", pathToTmp);

@@ -6,9 +6,80 @@ import {
   getValidator,
 } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
+import { startMockServer, stopMockServer } from "./util.mjs";
 
 const expect = chai.expect;
 const localTablelandChainId = 31337;
+
+describe("Validator and Chain startup and shutdown", function () {
+  let server;
+  const lt = new LocalTableland({ silent: true });
+
+  this.timeout(20000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
+  afterEach(async function () {
+    // Ensure all processes are cleaned up after each test
+    try {
+      if (server) {
+        await stopMockServer(server);
+        server = null;
+      }
+      await lt.shutdown();
+    } catch (err) {
+      expect.fail(`failed to cleanup processes: ${err.message}`);
+    }
+  });
+
+  it("successfully starts when port 8545 is available", async function () {
+    try {
+      await lt.start();
+    } catch (err) {
+      expect.fail(`failed to start local network: ${err.message}`);
+    }
+  });
+
+  it("fails to start due to port 8545 already in use", async function () {
+    // Start a server on port 8545 to block Local Tableland from using it
+    server = await startMockServer(8545);
+
+    try {
+      // Start Local Tableland, which will attempt to use port 8545 and fail
+      await lt.start();
+      // If starting did not throw an error, fail the test
+      throw new Error("expected starting local network to fail, but it didn't");
+    } catch (err) {
+      // Local Tableland failed to start as expected because the port is blocked
+      expect(err.message).to.equal(
+        "cannot start a local chain due to port 8545 in use"
+      );
+    }
+    // Stop the server to unbind port 8545
+    await stopMockServer(server);
+
+    // Local Tableland can now start successfully
+    try {
+      await lt.start();
+    } catch (err) {
+      expect.fail(`failed to start local network: ${err.message}`);
+    }
+  });
+
+  it("successfully starts with retry logic after port 8545 initially in use", async function () {
+    // Start a server on port 8545 to block Local Tableland from using it
+    server = await startMockServer(8545);
+    const startLt = lt.start();
+
+    // Shut down the server after 3 seconds, allowing Local Tableland to use port 8545
+    setTimeout(async function () {
+      await stopMockServer(server);
+    }, 3000);
+
+    try {
+      await startLt;
+    } catch (err) {
+      expect.fail(`failed to start local network: ${err.message}`);
+    }
+  });
+});
 
 describe("Validator, Chain, and SDK work end to end", function () {
   const accounts = getAccounts();
@@ -19,12 +90,20 @@ describe("Validator, Chain, and SDK work end to end", function () {
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(20000);
   before(async function () {
-    await lt.start();
-    await new Promise((resolve) => setTimeout(() => resolve(), 2000));
+    try {
+      await lt.start();
+      await new Promise((resolve) => setTimeout(() => resolve(), 2000));
+    } catch (err) {
+      expect.fail(`failed to start local network: ${err.message}`);
+    }
   });
 
   after(async function () {
-    await lt.shutdown();
+    try {
+      await lt.shutdown();
+    } catch (err) {
+      expect.fail(`failed to cleanup processes: ${err.message}`);
+    }
   });
 
   it("creates a table that can be read from", async function () {
