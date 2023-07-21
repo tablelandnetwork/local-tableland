@@ -74,11 +74,11 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // check if the port is in use and retry 5 times (1 second between each)
+    // check if the hardhat port is in use and retry 5 times (1 second between each)
+    const hardhatPort = 8545;
     let retries = 0;
-    const port = 8545;
     while (retries < 5) {
-      const portInUse = await checkPortInUse(port);
+      const portInUse = await checkPortInUse(hardhatPort);
       if (!portInUse) break;
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -86,8 +86,14 @@ class LocalTableland {
     }
     // throw if all retries failed and port is in use
     if (retries === 5) {
-      throw new Error(`cannot start a local chain due to port ${port} in use`);
+      throw new Error(
+        `cannot start a local chain due to port ${hardhatPort} in use`
+      );
     }
+
+    // You *must* store these in `process.env` to access within the hardhat subprocess
+    process.env.HARDHAT_NETWORK = "hardhat";
+    process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
 
     // Run a local hardhat node
     this.registry = spawn(
@@ -99,8 +105,6 @@ class LocalTableland {
         cwd: this.registryDir,
         env: {
           ...process.env,
-          HARDHAT_NETWORK: "hardhat",
-          HARDHAT_UNLIMITED_CONTRACT_SIZE: "true",
         },
       }
     );
