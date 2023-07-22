@@ -78,7 +78,7 @@ describe("Validator and Chain startup and shutdown", function () {
     }
   });
 
-  it("successfully starts with a fallback port when 8545 in use and resets config", async function () {
+  it("successfully starts with fallback port, compatible with utils, and resets config", async function () {
     // Start a server on port 8545 to block Local Tableland from using it
     server = await startMockServer(defaultPort);
     // Check if it is in use
@@ -100,6 +100,10 @@ describe("Validator and Chain startup and shutdown", function () {
     expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
       `ws://localhost:8546`
     );
+
+    // Should still be able to use SDK-related helpers
+    const accounts = getAccounts();
+    expect(accounts.length).to.equal(20);
 
     // Shut down Local Tableland and ensure validator config file is reset
     await lt.shutdown();
