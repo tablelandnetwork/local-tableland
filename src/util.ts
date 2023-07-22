@@ -7,8 +7,7 @@ import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
-import { hardhatPort } from "./main.js";
-import shell from "shelljs";
+import { HARDHAT_PORT } from "./main.js";
 
 // NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
@@ -320,7 +319,7 @@ export const getAccounts = function (): Wallet[] {
   return hardhatAccounts.map((account) => {
     const wallet = new Wallet(account);
     return wallet.connect(
-      getDefaultProvider(`http://127.0.0.1:${hardhatPort}`)
+      getDefaultProvider(`http://127.0.0.1:${HARDHAT_PORT}`)
     );
   });
 };

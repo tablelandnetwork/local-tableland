@@ -4,6 +4,8 @@
 import spawn from "cross-spawn";
 import { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
+import { resolve } from "node:path";
+import { readFileSync, writeFileSync } from "node:fs";
 import shell from "shelljs";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
@@ -23,12 +25,10 @@ import {
   probePortInUse,
   waitForReady,
 } from "./util.js";
-import { resolve } from "node:path";
-import { readFile, writeFile } from "fs/promises";
 
 const spawnSync = spawn.sync;
 
-let hardhatPort = 8545;
+let HARDHAT_PORT = 8545;
 
 class LocalTableland {
   config;
@@ -79,14 +79,14 @@ class LocalTableland {
     this.#_cleanup();
 
     // check if the hardhat port is in use and try 5 times (1 second b/w each)
-    const defaultPortIsTaken = await probePortInUse(hardhatPort, 5, 1000);
+    const defaultPortIsTaken = await probePortInUse(HARDHAT_PORT, 5, 1000);
     // if the default port is taken, we will try a set of 3 fallback ports and
     // throw if none are available
     let newPort; // note: if a new port is used, common clients that expect port 8545 will not work
     if (defaultPortIsTaken) {
       const fallbackPorts = Array.from(
         { length: 3 },
-        (_, i) => hardhatPort + i + 1
+        (_, i) => HARDHAT_PORT + i + 1
       );
       for (const port of fallbackPorts) {
         // check each port with 1 try, no delay
@@ -99,7 +99,7 @@ class LocalTableland {
       // If no new port was set, we were unable to find an open port
       if (newPort === undefined)
         throw new Error(
-          `cannot start a local chain, port ${hardhatPort} and all fallbacks in use`
+          `cannot start a local chain, port ${HARDHAT_PORT} and all fallbacks in use`
         );
     }
 
@@ -115,7 +115,7 @@ class LocalTableland {
     if (newPort !== undefined) {
       // log the new port for awareness, also exported elsewhere
       shell.echo(`Using fallback port ${newPort} for hardhat`);
-      hardhatPort = newPort;
+      HARDHAT_PORT = newPort;
 
       // the validator should have a directory path set upon initialization
       if (this.validator.validatorDir === undefined)
@@ -127,22 +127,22 @@ class LocalTableland {
         this.validator.validatorDir,
         "config.json"
       );
-      const configFile = await readFile(configFilePath);
+      const configFile = readFileSync(configFilePath);
       const validatorConfig = JSON.parse(configFile.toString());
-      validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${hardhatPort}`;
+      validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${HARDHAT_PORT}`;
 
-      await writeFile(configFilePath, JSON.stringify(validatorConfig, null, 2));
+      writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
     }
 
     // You *must* store these in `process.env` to access within the hardhat subprocess
     process.env.HARDHAT_NETWORK = "hardhat";
     process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
-    process.env.HARDHAT_PORT = hardhatPort.toString();
+    process.env.HARDHAT_PORT = HARDHAT_PORT.toString();
 
     // Run a local hardhat node
     this.registry = spawn(
       isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node", "--port", hardhatPort.toString()], // TODO: use a fallback port on conflicts vs. failing on retries
+      ["hardhat", "node", "--port", HARDHAT_PORT.toString()], // Use a fallback port on conflicts
       {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
@@ -286,14 +286,17 @@ class LocalTableland {
   }
 
   // cleanup should restore everything to the starting state.
-  // e.g. remove docker images, database backups, resetting ports
+  // e.g. remove docker images, database backups, resetting state
   #_cleanup() {
     shell.rm("-rf", "./tmp");
-    hardhatPort = 8545;
+    HARDHAT_PORT = 8545;
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;
 
     this.validator.cleanup();
+    // Reset validator and registry state since these are no longer needed
+    this.registry = undefined;
+    this.validator = undefined;
   }
 }
 
@@ -303,6 +306,6 @@ export {
   getDatabase,
   getRegistry,
   getValidator,
-  hardhatPort,
+  HARDHAT_PORT,
 };
 export type { Config };
