@@ -12,6 +12,7 @@ import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
   Config,
+  checkPortInUse,
   defaultRegistryDir,
   inDebugMode,
   isWindows,
@@ -22,7 +23,6 @@ import {
   getValidator,
   logSync,
   pipeNamedSubprocess,
-  probePortInUse,
   waitForReady,
 } from "./util.js";
 
@@ -78,8 +78,20 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // check if the hardhat port is in use and try 5 times (1 second b/w each)
-    const defaultPortIsTaken = await probePortInUse(HARDHAT_PORT, 5, 1000);
+    // check if the hardhat port is in use and try 5 times (500ms second b/w each)
+    let defaultPortIsTaken = false;
+    const totalTries = 5;
+    let numTries = 0;
+    while (numTries < totalTries) {
+      const portIsTaken = await checkPortInUse(HARDHAT_PORT);
+      if (!portIsTaken) break;
+
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      numTries++;
+    }
+    // if the number of tries is equal to the total tries, the port is in use
+    defaultPortIsTaken = numTries === totalTries;
+
     // if the default port is taken, we will try a set of 3 fallback ports and
     // throw if none are available
     let newPort; // note: if a new port is used, common clients that expect port 8545 will not work
@@ -90,8 +102,8 @@ class LocalTableland {
       );
       for (const port of fallbackPorts) {
         // check each port with 1 try, no delay
-        const isTaken = await probePortInUse(port, 1, 0);
-        if (!isTaken) {
+        const portIsTaken = await checkPortInUse(port);
+        if (!portIsTaken) {
           newPort = port;
           break;
         }
@@ -258,9 +270,14 @@ class LocalTableland {
   }
 
   async shutdown() {
-    await this.shutdownValidator();
-    await this.shutdownRegistry();
-    this.#_cleanup();
+    try {
+      await this.shutdownValidator();
+      await this.shutdownRegistry();
+    } catch (err: any) {
+      throw new Error(`unexpected error during shutdown: ${err.message}`);
+    } finally {
+      this.#_cleanup();
+    }
   }
 
   shutdownRegistry(): Promise<void> {

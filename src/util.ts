@@ -1,4 +1,4 @@
-import { createServer } from "net";
+import { Socket } from "net";
 import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
@@ -324,50 +324,54 @@ export const getAccounts = function (): Wallet[] {
   });
 };
 
-export function checkPortInUse(port: number): Promise<boolean> {
-  return new Promise((resolve) => {
-    const server = createServer();
-
-    server.once("error", function (err: Error & { code?: string }) {
-      if (err.code === "EADDRINUSE") {
-        resolve(true);
-      }
-    });
-
-    server.once("listening", function () {
-      server.close();
-      resolve(false);
-    });
-
-    server.listen(port);
-  });
-}
-
 /**
- * Probe a port to see if it is in use, and if so, retry with a specified wait
- * time between tries.
+ * Set up a socket connection to check if a port is in use
  * @param port the port number
- * @param tries number of times to try probing
- * @param timeout amount of time to wait after a failed try
- * @returns `true` if the probe is in use, false otherwise
+ * @returns `true` if the port is in use, false otherwise
  */
-export function probePortInUse(
-  port: number,
-  tries: number,
-  timeout: number
-): Promise<boolean> {
-  return new Promise((resolve) => {
-    (async () => {
-      let numTries = 0;
-      while (numTries < tries) {
-        const portInUse = await checkPortInUse(port);
-        if (!portInUse) break;
+export function checkPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const timeout = 200;
+    const host = "127.0.0.1";
+    const socket = new Socket();
 
-        await new Promise((resolve) => setTimeout(resolve, timeout));
-        numTries++;
+    // Socket connection established, so port is in use
+    const onConnect = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    // If no response on timeout, assume port is in use
+    const onTimeout = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    // If connection is refused, the port is open
+    const onError = (err: Error & { code: string }) => {
+      cleanup();
+      if (err.code === "ECONNREFUSED") {
+        resolve(false);
+      } else {
+        reject(err);
       }
-      // if the number of tries is equal to the total tries, the port is in use
-      resolve(numTries === tries);
-    })();
+    };
+
+    // Attach event listeners
+    socket.once("connect", onConnect);
+    socket.once("timeout", onTimeout);
+    socket.once("error", onError);
+
+    // Clean up event listeners
+    const cleanup = () => {
+      socket.off("connect", onConnect);
+      socket.off("timeout", onTimeout);
+      socket.off("error", onError);
+      socket.destroy();
+    };
+
+    // Set timeout and connect to the port
+    socket.setTimeout(timeout);
+    socket.connect(port, host);
   });
 }
