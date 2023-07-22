@@ -8,8 +8,8 @@ import {
 } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
 import { startMockServer, stopMockServer } from "./util.mjs";
-import { resolve } from "path";
-import { readFile, writeFile } from "fs/promises";
+import { join } from "node:path";
+import { readFileSync } from "node:fs";
 
 const expect = chai.expect;
 const localTablelandChainId = 31337;
@@ -17,6 +17,7 @@ const localTablelandChainId = 31337;
 describe("Validator and Chain startup and shutdown", function () {
   let server;
   const lt = new LocalTableland({ silent: true });
+  const defaultPort = 8545; // Used for hardhat
 
   this.timeout(20000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
   afterEach(async function () {
@@ -26,25 +27,41 @@ describe("Validator and Chain startup and shutdown", function () {
         await stopMockServer(server);
         server = null;
       }
-      await lt.shutdown();
+      // Ensure both validator and registry haven't already been shut down & cleaned up
+      // before attempting to shut them down
+      if (lt.validator !== undefined && lt.registry !== undefined) {
+        await lt.shutdown();
+      }
     } catch (err) {
-      expect.fail(`failed to cleanup processes: ${err.message}`);
+      expect.fail(
+        `failed to cleanup processes after each test: ${err.message}`
+      );
     }
   });
 
-  it("successfully starts when port 8545 is available", async function () {
+  it("successfully starts when port 8545 is available and shuts down", async function () {
     try {
       await lt.start();
+      expect(lt.validator).to.not.equal(undefined);
+      expect(lt.registry).to.not.equal(undefined);
     } catch (err) {
       expect.fail(`failed to start local network: ${err.message}`);
+    }
+
+    try {
+      await lt.shutdown();
+      expect(lt.validator).to.be.equal(undefined);
+      expect(lt.registry).to.be.equal(undefined);
+    } catch (err) {
+      expect.fail(`failed to shut down local network: ${err.message}`);
     }
   });
 
   it("successfully starts with retry logic after port 8545 initially in use", async function () {
     // Start a server on port 8545 to block Local Tableland from using it
-    server = await startMockServer(8545);
+    server = await startMockServer(defaultPort);
     // Verify that the server is running on port 8545
-    const portInUse = await checkPortInUse(8545);
+    const portInUse = await checkPortInUse(defaultPort);
     expect(portInUse).to.equal(true);
 
     // Start Local Tableland with a promise that will resolve when the server is closed
@@ -61,36 +78,40 @@ describe("Validator and Chain startup and shutdown", function () {
     }
   });
 
-  it("successfully starts with a fallback port when 8545 is in use", async function () {
+  it("successfully starts with a fallback port when 8545 in use and resets config", async function () {
     // Start a server on port 8545 to block Local Tableland from using it
-    const defaultPort = 8545;
-    // Start server on all port 8545
     server = await startMockServer(defaultPort);
     // Check if it is in use
     const portInUse = await checkPortInUse(defaultPort);
     expect(portInUse).to.equal(true);
 
-    // Local Tableland can now start successfully
+    // Local Tableland should start successfully on first fallback port 8546
     try {
       await lt.start();
+      await new Promise((resolve) => setTimeout(() => resolve(), 3000));
     } catch (err) {
       expect.fail(`failed to start local network: ${err.message}`);
     }
 
-    // Clean up validator config, which was overwritten with fallback port
-    const configFilePath = resolve(lt.validator.validatorDir, "config.json");
-    const configFile = await readFile(configFilePath);
-    const validatorConfig = JSON.parse(configFile.toString());
-    validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${defaultPort}`;
-    await writeFile(
-      configFilePath,
-      JSON.stringify(validatorConfig, null, 2) + "\n"
+    // Config file should have been updated to use fallback port 8546
+    const configFilePath = join(lt.validator.validatorDir, "config.json");
+    let configFile = readFileSync(configFilePath);
+    let validatorConfig = JSON.parse(configFile.toString());
+    expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
+      `ws://localhost:8546`
+    );
+
+    // Shut down Local Tableland and ensure validator config file is reset
+    await lt.shutdown();
+    configFile = readFileSync(configFilePath);
+    validatorConfig = JSON.parse(configFile.toString());
+    expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
+      `ws://localhost:8545`
     );
   });
 
   it("fails to start due to port 8545 and all fallbacks already in use", async function () {
     // Start a server on port 8545 to block Local Tableland from using it
-    const defaultPort = 8545;
     const fallbackPorts = Array.from(
       { length: 3 },
       (_, i) => defaultPort + i + 1
@@ -117,10 +138,12 @@ describe("Validator and Chain startup and shutdown", function () {
         `cannot start a local chain, port ${defaultPort} and all fallbacks in use`
       );
     }
+    // Ensure Local Tableland subprocesses did not start and/or are not hanging
+    expect(lt.validator).to.equal(undefined);
+    expect(lt.registry).to.equal(undefined);
 
     // Stop the servers to unbind port 8545 and fallbacks
     await Promise.all(servers.map((server) => stopMockServer(server)));
-
     // Local Tableland can now start successfully
     try {
       await lt.start();
