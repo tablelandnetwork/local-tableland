@@ -1,4 +1,4 @@
-import net from "net";
+import { createServer } from "net";
 import inspector from "node:inspector";
 import { isAbsolute, join, resolve } from "node:path";
 import { EventEmitter } from "node:events";
@@ -7,6 +7,8 @@ import { ChildProcess, SpawnSyncReturns } from "node:child_process";
 import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
+import { hardhatPort } from "./main.js";
+import shell from "shelljs";
 
 // NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
@@ -33,7 +35,7 @@ export type ConfigDescriptor = {
 //       1. env vars
 //       2. command line args, e.g. `npx local-tableland --validator ../go-tableland`
 //       3. a `tableland.config.js` file, which is either inside `process.pwd()` or specified
-//          via command line arg.  e.g. `npx local-tableland --config ../tlb-confib.js`
+//          via command line arg.  e.g. `npx local-tableland --config ../tbl-config.js`
 const configDescriptors: ConfigDescriptor[] = [
   {
     name: "validatorDir",
@@ -148,7 +150,7 @@ export const isWindows = function () {
 };
 
 export const inDebugMode = function () {
-  // This seems to be the only relyable way to determine if the process
+  // This seems to be the only reliable way to determine if the process
   // is being debugged either at startup, or during runtime (e.g. vscode)
   return inspector.url() !== undefined;
 };
@@ -199,7 +201,7 @@ export const pipeNamedSubprocess = async function (
     let lines = data.split("\n");
     if (!verbose) {
       lines = lines.filter((line) => !isExtraneousLog(line));
-      // if not verbose we are going to elliminate multiple empty
+      // if not verbose we are going to eliminate multiple empty
       // lines and any messages that don't have at least one character
       if (!lines.filter((line) => line.trim()).length) {
         lines = [];
@@ -317,13 +319,15 @@ export const getAccounts = function (): Wallet[] {
   // node resolves localhost to IPv4 or IPv6 depending on env
   return hardhatAccounts.map((account) => {
     const wallet = new Wallet(account);
-    return wallet.connect(getDefaultProvider("http://127.0.0.1:8545"));
+    return wallet.connect(
+      getDefaultProvider(`http://127.0.0.1:${hardhatPort}`)
+    );
   });
 };
 
 export function checkPortInUse(port: number): Promise<boolean> {
   return new Promise((resolve) => {
-    const server = net.createServer();
+    const server = createServer();
 
     server.once("error", function (err: Error & { code?: string }) {
       if (err.code === "EADDRINUSE") {
@@ -337,5 +341,34 @@ export function checkPortInUse(port: number): Promise<boolean> {
     });
 
     server.listen(port);
+  });
+}
+
+/**
+ * Probe a port to see if it is in use, and if so, retry with a specified wait
+ * time between tries.
+ * @param port the port number
+ * @param tries number of times to try probing
+ * @param timeout amount of time to wait after a failed try
+ * @returns `true` if the probe is in use, false otherwise
+ */
+export function probePortInUse(
+  port: number,
+  tries: number,
+  timeout: number
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    (async () => {
+      let numTries = 0;
+      while (numTries < tries) {
+        const portInUse = await checkPortInUse(port);
+        if (!portInUse) break;
+
+        await new Promise((resolve) => setTimeout(resolve, timeout));
+        numTries++;
+      }
+      // if the number of tries is equal to the total tries, the port is in use
+      resolve(numTries === tries);
+    })();
   });
 }

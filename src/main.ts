@@ -10,7 +10,6 @@ import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
   Config,
-  checkPortInUse,
   defaultRegistryDir,
   inDebugMode,
   isWindows,
@@ -21,10 +20,15 @@ import {
   getValidator,
   logSync,
   pipeNamedSubprocess,
+  probePortInUse,
   waitForReady,
 } from "./util.js";
+import { resolve } from "node:path";
+import { readFile, writeFile } from "fs/promises";
 
 const spawnSync = spawn.sync;
+
+let hardhatPort = 8545;
 
 class LocalTableland {
   config;
@@ -74,21 +78,60 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // check if the hardhat port is in use and retry 5 times (1 second between each)
-    const hardhatPort = 8545;
-    let retries = 0;
-    while (retries < 5) {
-      const portInUse = await checkPortInUse(hardhatPort);
-      if (!portInUse) break;
-
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      retries++;
-    }
-    // throw if all retries failed and port is in use
-    if (retries === 5) {
-      throw new Error(
-        `cannot start a local chain due to port ${hardhatPort} in use`
+    // check if the hardhat port is in use and try 5 times (1 second b/w each)
+    const defaultPortIsTaken = await probePortInUse(hardhatPort, 5, 1000);
+    // if the default port is taken, we will try a set of 3 fallback ports and
+    // throw if none are available
+    let newPort; // note: if a new port is used, common clients that expect port 8545 will not work
+    if (defaultPortIsTaken) {
+      const fallbackPorts = Array.from(
+        { length: 3 },
+        (_, i) => hardhatPort + i + 1
       );
+      for (const port of fallbackPorts) {
+        // check each port with 1 try, no delay
+        const isTaken = await probePortInUse(port, 1, 0);
+        if (!isTaken) {
+          newPort = port;
+          break;
+        }
+      }
+      // If no new port was set, we were unable to find an open port
+      if (newPort === undefined)
+        throw new Error(
+          `cannot start a local chain, port ${hardhatPort} and all fallbacks in use`
+        );
+    }
+
+    // Need to determine if we are starting the validator via docker
+    // and a local repo, or if are running a binary etc...
+    // Note: we do this before spawning the registry so that in the instance of a
+    // port conflict, we can update the validator config with the new hardhat
+    // port before starting the validator process
+    const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
+    this.validator = new ValidatorClass(this.validatorDir);
+
+    // If the new port exists, set it, and update validator config
+    if (newPort !== undefined) {
+      // log the new port for awareness, also exported elsewhere
+      shell.echo(`Using fallback port ${newPort} for hardhat`);
+      hardhatPort = newPort;
+
+      // the validator should have a directory path set upon initialization
+      if (this.validator.validatorDir === undefined)
+        throw new Error(
+          `cannot find validator config during port fallback setup`
+        );
+      // update the validator config file with a new "EthEndpoint" port
+      const configFilePath = resolve(
+        this.validator.validatorDir,
+        "config.json"
+      );
+      const configFile = await readFile(configFilePath);
+      const validatorConfig = JSON.parse(configFile.toString());
+      validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${hardhatPort}`;
+
+      await writeFile(configFilePath, JSON.stringify(validatorConfig, null, 2));
     }
 
     // You *must* store these in `process.env` to access within the hardhat subprocess
@@ -140,12 +183,6 @@ class LocalTableland {
       ),
       !inDebugMode()
     );
-
-    // need to determine if we are starting the validator via docker
-    // and a local repo, or if are running a binary etc...
-    const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
-
-    this.validator = new ValidatorClass(this.validatorDir);
 
     // run this before starting in case the last instance of the validator didn't get cleanup after
     // this might be needed if a test runner force quits the parent local-tableland process
@@ -249,10 +286,10 @@ class LocalTableland {
   }
 
   // cleanup should restore everything to the starting state.
-  // e.g. remove docker images and database backups
+  // e.g. remove docker images, database backups, resetting ports
   #_cleanup() {
     shell.rm("-rf", "./tmp");
-
+    hardhatPort = 8545;
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;
 
@@ -260,5 +297,12 @@ class LocalTableland {
   }
 }
 
-export { LocalTableland, getAccounts, getDatabase, getRegistry, getValidator };
+export {
+  LocalTableland,
+  getAccounts,
+  getDatabase,
+  getRegistry,
+  getValidator,
+  hardhatPort,
+};
 export type { Config };
