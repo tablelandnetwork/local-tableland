@@ -5,6 +5,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import { getBinPath } from "@tableland/validator";
 import shell from "shelljs";
 import { logSync, isWindows } from "./util.js";
+import { HARDHAT_PORT } from "./main.js";
 
 // NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
@@ -50,6 +51,13 @@ class ValidatorPkg {
       validatorUri = this.validatorDir;
     }
 
+    const configFilePath = join(this.validatorDir, "config.json");
+    const configFile = readFileSync(configFilePath);
+    const validatorConfig = JSON.parse(configFile.toString());
+
+    // save the validator config state
+    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+
     this.process = spawn(binPath, ["--dir", validatorUri], {
       // we can't run in windows if we use detached mode
       detached: !isWindows(),
@@ -65,7 +73,7 @@ class ValidatorPkg {
     process.kill(-this.process.pid);
   }
 
-  // fully nuke the database
+  // fully nuke the database and reset the config file
   cleanup() {
     shell.rm("-rf", resolve(this.validatorDir, "backups"));
 
@@ -75,6 +83,25 @@ class ValidatorPkg {
     ];
     for (const filepath of dbFiles) {
       shell.rm("-f", filepath);
+    }
+
+    // reset the Validator config file if it was modified upon hardhat port fallbacks
+    if (ORIGINAL_VALIDATOR_CONFIG) {
+      // parse the original config
+      const validatorConfig = JSON.parse(ORIGINAL_VALIDATOR_CONFIG.toString());
+      // check if the endpoint changed for the local hardhat node
+      if (
+        validatorConfig.Chains[0].Registry.EthEndpoint !==
+        `ws://localhost:${HARDHAT_PORT}`
+      ) {
+        const configFilePath = join(this.validatorDir, "config.json");
+        // reset the endpoint to the default hardhat port
+        validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${HARDHAT_PORT}`;
+        writeFileSync(
+          configFilePath,
+          JSON.stringify(validatorConfig, null, 2) + "\n" // Default file has new line at the end
+        );
+      }
     }
   }
 }
