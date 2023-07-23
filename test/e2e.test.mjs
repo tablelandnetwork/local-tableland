@@ -91,11 +91,11 @@ describe("Validator and Chain startup and shutdown", function () {
       return startLt;
     };
     const measureStartLt = measureExecutionTime(startFn);
-    // Shut down the server after 1 second, allowing Local Tableland to use port 8545
+    // Shut down the server after 300ms, allowing Local Tableland to use port 8545
     // This will execute 2 of 5 retries on port 8545 before opening the port
     setTimeout(async function () {
       await stopMockServer(server);
-    }, 1000);
+    }, 300);
 
     try {
       const startupExecutionTime = await measureStartLt;
@@ -125,7 +125,7 @@ describe("Validator and Chain startup and shutdown", function () {
   });
 
   describe("with fallback enabled", function () {
-    it.only("successfully starts with fallback port, works with SDK, and resets config", async function () {
+    it("successfully starts with fallback port, works with SDK, and resets config", async function () {
       lt = new LocalTableland({ silent: true, fallback: true });
       // Start a server on port 8545 to block Local Tableland from using it
       server = await startMockServer(defaultPort);
@@ -177,7 +177,7 @@ describe("Validator and Chain startup and shutdown", function () {
 
     it("fails to start due to port 8545 and all fallbacks in use", async function () {
       lt = new LocalTableland({ silent: true, fallback: true });
-      // Set up static set of fallback ports (these are shown in `main.#_start()`)
+      // Set up static set of fallback ports (shown in `main.#_start()` with `useFallbackPort`)
       const fallbackPorts = Array.from(
         { length: 3 },
         (_, i) => defaultPort + i + 1
