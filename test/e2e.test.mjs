@@ -16,21 +16,22 @@ const localTablelandChainId = 31337;
 
 describe("Validator and Chain startup and shutdown", function () {
   let server;
-  const lt = new LocalTableland({ silent: true });
+  let lt;
   const defaultPort = 8545; // Used for hardhat
 
-  this.timeout(20000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
+  this.timeout(30000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
   afterEach(async function () {
     // Ensure all processes are cleaned up after each test
     try {
       if (server) {
         await stopMockServer(server);
-        server = null;
+        server = undefined;
       }
       // Ensure both validator and registry haven't already been shut down & cleaned up
       // before attempting to shut them down
       if (lt.validator !== undefined && lt.registry !== undefined) {
         await lt.shutdown();
+        lt = undefined;
       }
     } catch (err) {
       expect.fail(
@@ -39,7 +40,8 @@ describe("Validator and Chain startup and shutdown", function () {
     }
   });
 
-  it("successfully starts when port 8545 is available and shuts down", async function () {
+  it("successfully starts and shuts down", async function () {
+    lt = new LocalTableland({ silent: true });
     try {
       await lt.start();
       expect(lt.validator).to.not.equal(undefined);
@@ -58,6 +60,7 @@ describe("Validator and Chain startup and shutdown", function () {
   });
 
   it("successfully starts with retry logic after port 8545 initially in use", async function () {
+    lt = new LocalTableland({ silent: true });
     // Start a server on port 8545 to block Local Tableland from using it
     server = await startMockServer(defaultPort);
     // Verify that the server is running on port 8545
@@ -66,10 +69,11 @@ describe("Validator and Chain startup and shutdown", function () {
 
     // Start Local Tableland with a promise that will resolve when the server is closed
     const startLt = lt.start();
-    // Shut down the server after 3 seconds, allowing Local Tableland to use port 8545
+    // Shut down the server after 1 second, allowing Local Tableland to use port 8545
+    // This will execute 2 of 5 retries on port 8545 before opening the port
     setTimeout(async function () {
       await stopMockServer(server);
-    }, 3000);
+    }, 1000);
 
     try {
       await startLt;
@@ -78,7 +82,8 @@ describe("Validator and Chain startup and shutdown", function () {
     }
   });
 
-  it("successfully starts with fallback port, compatible with utils, and resets config", async function () {
+  it("successfully starts with fallback port, works with SDK, and resets config", async function () {
+    lt = new LocalTableland({ silent: true, fallback: true });
     // Start a server on port 8545 to block Local Tableland from using it
     server = await startMockServer(defaultPort);
     // Check if it is in use
@@ -101,9 +106,16 @@ describe("Validator and Chain startup and shutdown", function () {
       `ws://localhost:8546`
     );
 
-    // Should still be able to use SDK-related helpers
+    // Should still be able to use SDK
     const accounts = getAccounts();
     expect(accounts.length).to.equal(20);
+    const signer = accounts[1];
+    const db = getDatabase(signer);
+    try {
+      await db.exec(`CREATE TABLE test_fallback (id INT);`);
+    } catch (err) {
+      expect.fail(`failed to use SDK on fallback port`);
+    }
 
     // Shut down Local Tableland and ensure validator config file is reset
     await lt.shutdown();
@@ -115,7 +127,8 @@ describe("Validator and Chain startup and shutdown", function () {
   });
 
   it("fails to start due to port 8545 and all fallbacks already in use", async function () {
-    // Start a server on port 8545 to block Local Tableland from using it
+    lt = new LocalTableland({ silent: true, fallback: true });
+    // Set up static set of fallback ports (these are shown in `main.#_start()`)
     const fallbackPorts = Array.from(
       { length: 3 },
       (_, i) => defaultPort + i + 1
@@ -125,7 +138,7 @@ describe("Validator and Chain startup and shutdown", function () {
     const servers = await Promise.all(
       ports.map((port) => startMockServer(port))
     );
-    // Check each port to see if it is in use
+    // Check each port to make sure each is in use
     for (const port of ports) {
       const portInUse = await checkPortInUse(port);
       expect(portInUse).to.equal(true);
@@ -164,7 +177,7 @@ describe("Validator, Chain, and SDK work end to end", function () {
   });
 
   // These tests take a bit longer than normal since we are running them against an actual network
-  this.timeout(20000);
+  this.timeout(30000);
   before(async function () {
     try {
       await lt.start();
