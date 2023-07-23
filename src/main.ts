@@ -13,6 +13,7 @@ import {
   checkPortInUse,
   defaultRegistryDir,
   inDebugMode,
+  isValidPort,
   isWindows,
   getAccounts,
   getConfigFile,
@@ -41,8 +42,8 @@ class LocalTableland {
   docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
-  registryPort: number;
   fallback?: boolean;
+  registryPort: number;
 
   constructor(configParams: Config = {}) {
     this.config = configParams;
@@ -66,16 +67,13 @@ class LocalTableland {
     if (typeof config.docker === "boolean") this.docker = config.docker;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
+    if (typeof config.fallback === "boolean") this.fallback = config.fallback;
     if (typeof config.registryPort === "number") {
       // Make sure the port is in the valid range 1-65535
-      const isValidPort =
-        Number.isInteger(config.registryPort) &&
-        config.registryPort >= 1 &&
-        config.registryPort <= 65535;
-      if (!isValidPort) throw new Error("invalid Registry port");
+      if (!isValidPort(config.registryPort))
+        throw new Error("invalid Registry port");
       this.registryPort = config.registryPort;
     }
-    if (typeof config.fallback === "boolean") this.fallback = config.fallback;
 
     await this.#_start(config);
   }
@@ -93,7 +91,6 @@ class LocalTableland {
     // Note: this generally works, but there is a chance that the port will be
     // taken—e.g., try racing two instances *exactly* at the same, and
     // `EADDRINUSE` occurs. But generally, it'll work with the expected logic.
-    let defaultPortIsTaken = false;
     const totalTries = 5;
     let numTries = 0;
     while (numTries < totalTries) {
@@ -104,19 +101,28 @@ class LocalTableland {
       numTries++;
     }
     // if the number of tries is equal to the total tries, the port is in use
-    defaultPortIsTaken = numTries === totalTries;
+    const defaultPortIsTaken = numTries === totalTries;
     // if fallbacks are not enabled, throw since the default port is in use
-    if (!this.config.fallback && defaultPortIsTaken)
+    if (!this.fallback && defaultPortIsTaken)
       throw new Error(
         `port ${this.registryPort} already in use; try enabling 'fallback' option`
       );
 
-    // if the default port is taken, we will try a set of 3 fallback ports and
-    // throw if none are available
-    // note: if a new port is used, common clients that expect port 8545 will
-    // not work as expected since they look for port 8545 by default
-    let newPort;
-    if (defaultPortIsTaken) {
+    // If the port is not taken, notify the user only if it's a not the default.
+    // Else, the registry port is taken, so we will try a set of 3 fallback
+    // ports and throw if none are available.
+    // Note: if a new port is used, common clients that expect port 8545 will
+    // not work as expected since they look for port 8545 by default.
+    if (!defaultPortIsTaken) {
+      // notify that we're using a custom port since it's not the default 8545
+      this.registryPort !== this.defaultRegistryPort &&
+        shell.echo(
+          `[${chalk.magenta.bold("Notice")}] Registry is using custom port ${
+            this.registryPort
+          }`
+        );
+    } else {
+      let newPort;
       const fallbackPorts = Array.from(
         { length: 3 },
         (_, i) => this.registryPort + i + 1
@@ -134,6 +140,13 @@ class LocalTableland {
         throw new Error(
           `cannot start a local chain, port ${this.registryPort} and all fallbacks in use`
         );
+      // notify that we're using a fallback port
+      shell.echo(
+        `[${chalk.magenta.bold(
+          "Notice"
+        )}] Registry default port in use, using fallback port ${newPort}`
+      );
+      this.registryPort = newPort;
     }
 
     // Need to determine if we are starting the validator via docker
@@ -144,17 +157,7 @@ class LocalTableland {
     const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
 
     // If the new port exists, set it, and update validator config
-    // Else, use the default port
-    if (newPort !== undefined) {
-      // log the new port for awareness, also exported elsewhere
-      shell.echo(
-        `[${chalk.magenta.bold(
-          "Notice"
-        )}] Registry default port in use, using fallback port ${newPort}`
-      );
-      this.registryPort = newPort;
-    }
-    // Validator uses port 8545 by default, but be sure to set it in case of fallbacks
+    // Else, use the default port passed in
     this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
     // You *must* store these in `process.env` to access within the hardhat subprocess
@@ -329,7 +332,6 @@ class LocalTableland {
   // e.g. remove docker images, database backups, resetting state
   #_cleanup() {
     shell.rm("-rf", "./tmp");
-    this.registryPort = this.defaultRegistryPort;
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;
 

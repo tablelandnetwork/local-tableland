@@ -29,18 +29,18 @@ const argv = yargs(hideBin(process.argv)).options({
     type: "boolean",
     description: "Silence all output to stdout.",
   },
-  registryPort: {
-    type: "number",
-    description:
-      "Use a custom Registry port for hardhat. Defaults to port 8545.",
-  },
   // note: if a new fallback port is used, clients (SDK, CLI, etc.) that expect port
   // 8545 will not work—the end user can adjust accordingly, but tests that use
-  // Local Tableland utilities do not need to
+  // Local Tableland utilities do not need to and should work as expected.
   fallback: {
     type: "boolean",
     description:
-      "Use a fallback Registry port if the default port 8545 is in use.",
+      "Use a fallback Registry port if the default port 8545 is in use or a custom port is desired.",
+  },
+  registryPort: {
+    type: "number",
+    description:
+      "Use a custom Registry port for hardhat. Must have fallbacks enabled.",
   },
   init: {
     type: "boolean",
@@ -68,9 +68,11 @@ const go = async function () {
   if (tsArgv.docker) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
+  if (typeof tsArgv.fallback === "boolean") opts.fallback = tsArgv.fallback;
+  // TODO: whatever gets passed here doesn't actually do anything
+  // e.g., passing `--format --registryPort 8999` still uses 8545
   if (typeof tsArgv.registryPort === "number")
     opts.registryPort = tsArgv.registryPort;
-  if (typeof tsArgv.fallback === "boolean") opts.fallback = tsArgv.fallback;
 
   const tableland = new LocalTableland(opts);
 

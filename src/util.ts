@@ -30,24 +30,24 @@ export type ConfigDescriptor = {
     | "VERBOSE"
     | "SILENT"
     | "DOCKER"
-    | "REGISTRY_PORT"
-    | "FALLBACK";
+    | "FALLBACK"
+    | "REGISTRY_PORT";
   file:
     | "validatorDir"
     | "registryDir"
     | "verbose"
     | "silent"
     | "docker"
-    | "registryPort"
-    | "fallback";
+    | "fallback"
+    | "registryPort";
   arg:
     | "validator"
     | "registry"
     | "verbose"
     | "silent"
     | "docker"
-    | "registryPort"
-    | "fallback";
+    | "fallback"
+    | "registryPort";
   isPath: boolean;
 };
 
@@ -93,17 +93,17 @@ const configDescriptors: ConfigDescriptor[] = [
     isPath: false,
   },
   {
-    name: "registryPort",
-    env: "REGISTRY_PORT",
-    file: "registryPort",
-    arg: "registryPort",
-    isPath: false,
-  },
-  {
     name: "fallback",
     env: "FALLBACK",
     file: "fallback",
     arg: "fallback",
+    isPath: false,
+  },
+  {
+    name: "registryPort",
+    env: "REGISTRY_PORT",
+    file: "registryPort",
+    arg: "registryPort",
     isPath: false,
   },
 ];
@@ -149,16 +149,18 @@ export type Config = {
   silent?: boolean;
 
   /**
-   * Use a custom Registry hardhat port, e.g., `http://localhost:<registryPort>`.
-   */
-  registryPort?: number;
-
-  /**
-   * Use a fallback Registry port if the default port 8545 is in use. Note that
-   * clients will need to be configured to use this port over the default port,
-   * e.g., connect to `http://localhost:<fallbackPort>` instead of port 8545.
+   * Use a fallback Registry port if the default port 8545 is in use or a custom
+   * port is desired. Note that clients will need to be configured to use this
+   * port over the default port, e.g., connect to `http://127.0.0.1:<fallbackPort>`
+   * instead of port 8545.
    */
   fallback?: boolean;
+
+  /**
+   * Use a custom Registry hardhat port, e.g., `http://127.0.0.1:<registryPort>`.
+   * Must have fallbacks enabled.
+   */
+  registryPort?: number;
 };
 
 export const buildConfig = function (config: Config) {
@@ -231,6 +233,10 @@ export const inDebugMode = function () {
   // This seems to be the only reliable way to determine if the process
   // is being debugged either at startup, or during runtime (e.g. vscode)
   return inspector.url() !== undefined;
+};
+
+export const isValidPort = function (port: number) {
+  return Number.isInteger(port) && port >= 1 && port <= 65535;
 };
 
 export const logSync = function (
