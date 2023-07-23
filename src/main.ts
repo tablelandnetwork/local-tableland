@@ -43,6 +43,7 @@ class LocalTableland {
   docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
+  fallback?: boolean;
 
   constructor(configParams: Config = {}) {
     this.config = configParams;
@@ -78,7 +79,7 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // check if the hardhat port is in use and try 5 times (500ms second b/w each)
+    // check if the hardhat port is in use and try 5 times (500ms b/w each try)
     let defaultPortIsTaken = false;
     const totalTries = 5;
     let numTries = 0;
@@ -91,6 +92,9 @@ class LocalTableland {
     }
     // if the number of tries is equal to the total tries, the port is in use
     defaultPortIsTaken = numTries === totalTries;
+    // if fallbacks are not enabled, throw since the default port is in use
+    if (!this.config.fallback && defaultPortIsTaken)
+      throw new Error(`port ${HARDHAT_PORT} already in use`);
 
     // if the default port is taken, we will try a set of 3 fallback ports and
     // throw if none are available
@@ -108,7 +112,7 @@ class LocalTableland {
           break;
         }
       }
-      // If no new port was set, we were unable to find an open port
+      // if no new port was set, we were unable to find an open port
       if (newPort === undefined)
         throw new Error(
           `cannot start a local chain, port ${HARDHAT_PORT} and all fallbacks in use`

@@ -81,6 +81,7 @@ export type Config = {
   docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
+  fallback?: boolean;
 };
 
 export const buildConfig = function (config: Config) {

@@ -10,7 +10,7 @@ const argv = yargs(hideBin(process.argv)).options({
   validator: {
     type: "string",
     description:
-      "Path the the Tableland Validator directory.  If docker flag is set this must be the full repository.",
+      "Path the the Tableland Validator directory. If docker flag is set this must be the full repository.",
   },
   registry: {
     type: "string",
@@ -28,6 +28,11 @@ const argv = yargs(hideBin(process.argv)).options({
   silent: {
     type: "boolean",
     description: "Silence all output to stdout.",
+  },
+  fallback: {
+    type: "boolean",
+    default: false,
+    description: "Use fallback ports if hardhat default in use.",
   },
   init: {
     type: "boolean",
@@ -55,6 +60,7 @@ const go = async function () {
   if (tsArgv.docker) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
+  if (typeof tsArgv.fallback === "boolean") opts.fallback = tsArgv.fallback;
 
   const tableland = new LocalTableland(opts);
 
