@@ -245,3 +245,42 @@ export function stopMockServer(server) {
     });
   });
 }
+
+// Measure the execution time of a function, e.g., start/shutdown
+export async function measureExecutionTime(fn) {
+  const start = process.hrtime.bigint();
+  await fn();
+  const end = process.hrtime.bigint();
+
+  // execution time in milliseconds
+  const executionTime = Number(end - start) / 1e6;
+  return executionTime;
+}
+
+// Calculate the median execution time
+function calculateMedian(values) {
+  values.sort((a, b) => a - b);
+  const half = Math.floor(values.length / 2);
+  if (values.length % 2) return values[half];
+  return (values[half - 1] + values[half]) / 2.0;
+}
+
+// Log metrics for min, max, average, and median execution times
+export function logMetrics(metricName, metricArray) {
+  if (metricArray.length === 0) {
+    console.log(`  ${metricName}: no data`);
+    return;
+  }
+
+  const min = Math.min(...metricArray);
+  const max = Math.max(...metricArray);
+  const average =
+    metricArray.reduce((a, b) => a + b, 0) / metricArray.length || 0;
+  const median = calculateMedian(metricArray);
+
+  console.log(`  ${metricName}`);
+  console.log(`    min: ${Math.round(min)}ms`);
+  console.log(`    max: ${Math.round(max)}ms`);
+  console.log(`    average: ${Math.round(average)}ms`);
+  console.log(`    median: ${Math.round(median)}ms`);
+}
