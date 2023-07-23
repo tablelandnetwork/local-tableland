@@ -1,10 +1,11 @@
 import chai from "chai";
 import {
+  checkPortInUse,
   getAccounts,
   getDatabase,
   getRegistry,
+  getRegistryPort,
   getValidator,
-  checkPortInUse,
 } from "../dist/esm/util.js";
 import { LocalTableland } from "../dist/esm/main.js";
 import {
@@ -144,15 +145,16 @@ describe("Validator and Chain startup and shutdown", function () {
       }
 
       // Config file should have been updated to use fallback port 8546
+      const newPort = getRegistryPort(lt);
       const configFilePath = join(lt.validator.validatorDir, "config.json");
       let configFile = readFileSync(configFilePath);
       let validatorConfig = JSON.parse(configFile.toString());
       expect(validatorConfig.Chains[0].Registry.EthEndpoint).to.equal(
-        `ws://localhost:8546`
+        `ws://localhost:${newPort}`
       );
 
       // Should still be able to use SDK
-      const accounts = getAccounts();
+      const accounts = getAccounts(lt);
       expect(accounts.length).to.equal(20);
       const signer = accounts[1];
       const db = getDatabase(signer);
@@ -228,10 +230,12 @@ describe("Validator and Chain startup and shutdown", function () {
 });
 
 describe("Validator, Chain, and SDK work end to end", function () {
-  const accounts = getAccounts();
   const lt = new LocalTableland({
     silent: true,
   });
+  // Defaults to port on `127.0.0.1:8545`, so passing `lt` isn't strictly needed
+  // (i.e., a fallback must be enabled *and* it must actually happen)
+  const accounts = getAccounts(lt);
 
   // These tests take a bit longer than normal since we are running them against an actual network
   this.timeout(30000);
