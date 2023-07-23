@@ -2,3 +2,8 @@ node_modules
 dist
 registry/artifacts
 registry/cache
+
+# Ignore config since it should be allowed to have
+# end of file line with no return—it gets formatted
+# on writes, too.
+validator/config.json
