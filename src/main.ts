@@ -4,8 +4,6 @@
 import spawn from "cross-spawn";
 import { ChildProcess } from "node:child_process";
 import { EventEmitter } from "node:events";
-import { resolve } from "node:path";
-import { readFileSync, writeFileSync } from "node:fs";
 import shell from "shelljs";
 import { chalk } from "./chalk.js";
 import { ValidatorDev, ValidatorPkg } from "./validators.js";
@@ -20,6 +18,7 @@ import {
   getConfigFile,
   getDatabase,
   getRegistry,
+  getRegistryPort,
   getValidator,
   logSync,
   pipeNamedSubprocess,
@@ -28,8 +27,6 @@ import {
 
 const spawnSync = spawn.sync;
 
-let HARDHAT_PORT = 8545;
-
 class LocalTableland {
   config;
   initEmitter;
@@ -37,16 +34,19 @@ class LocalTableland {
   #_readyResolves: Function[] = [];
   registry?: ChildProcess;
   validator?: ValidatorDev | ValidatorPkg;
+  readonly defaultRegistryPort: number = 8545;
 
   validatorDir?: string;
   registryDir?: string;
-  docker?: boolean = false;
+  docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
-  fallback?: boolean = false;
+  registryPort: number;
+  fallback?: boolean;
 
   constructor(configParams: Config = {}) {
     this.config = configParams;
+    this.registryPort = this.defaultRegistryPort;
 
     // an emitter to help with init logic across the multiple sub-processes
     this.initEmitter = new EventEmitter();
@@ -66,6 +66,16 @@ class LocalTableland {
     if (typeof config.docker === "boolean") this.docker = config.docker;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
+    if (typeof config.registryPort === "number") {
+      // Make sure the port is in the valid range 1-65535
+      const isValidPort =
+        Number.isInteger(config.registryPort) &&
+        config.registryPort >= 1 &&
+        config.registryPort <= 65535;
+      if (!isValidPort) throw new Error("invalid Registry port");
+      this.registryPort = config.registryPort;
+    }
+    if (typeof config.fallback === "boolean") this.fallback = config.fallback;
 
     await this.#_start(config);
   }
@@ -79,12 +89,15 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // check if the hardhat port is in use and try 5 times (500ms b/w each try)
+    // Check if the hardhat port is in use and retry 5 times (500ms b/w each try)
+    // Note: this generally works, but there is a chance that the port will be
+    // taken—e.g., try racing two instances *exactly* at the same, and
+    // `EADDRINUSE` occurs. But generally, it'll work with the expected logic.
     let defaultPortIsTaken = false;
     const totalTries = 5;
     let numTries = 0;
     while (numTries < totalTries) {
-      const portIsTaken = await checkPortInUse(HARDHAT_PORT);
+      const portIsTaken = await checkPortInUse(this.registryPort);
       if (!portIsTaken) break;
 
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -95,7 +108,7 @@ class LocalTableland {
     // if fallbacks are not enabled, throw since the default port is in use
     if (!this.config.fallback && defaultPortIsTaken)
       throw new Error(
-        `port ${HARDHAT_PORT} already in use; try enabling 'fallback' option`
+        `port ${this.registryPort} already in use; try enabling 'fallback' option`
       );
 
     // if the default port is taken, we will try a set of 3 fallback ports and
@@ -106,7 +119,7 @@ class LocalTableland {
     if (defaultPortIsTaken) {
       const fallbackPorts = Array.from(
         { length: 3 },
-        (_, i) => HARDHAT_PORT + i + 1
+        (_, i) => this.registryPort + i + 1
       );
       for (const port of fallbackPorts) {
         // check each port with 1 try, no delay
@@ -119,7 +132,7 @@ class LocalTableland {
       // if no new port was set, we were unable to find an open port
       if (newPort === undefined)
         throw new Error(
-          `cannot start a local chain, port ${HARDHAT_PORT} and all fallbacks in use`
+          `cannot start a local chain, port ${this.registryPort} and all fallbacks in use`
         );
     }
 
@@ -129,44 +142,30 @@ class LocalTableland {
     // port conflict, we can update the validator config with the new hardhat
     // port before starting the validator process
     const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
-    this.validator = new ValidatorClass(this.validatorDir);
 
     // If the new port exists, set it, and update validator config
+    // Else, use the default port
     if (newPort !== undefined) {
       // log the new port for awareness, also exported elsewhere
       shell.echo(
-        `${chalk.magenta.bold(
-          "[Notice]"
-        )} Registry default port in use, using fallback port ${newPort}`
+        `[${chalk.magenta.bold(
+          "Notice"
+        )}] Registry default port in use, using fallback port ${newPort}`
       );
-      HARDHAT_PORT = newPort;
-
-      // the validator should have a directory path set upon initialization
-      if (this.validator.validatorDir === undefined)
-        throw new Error(
-          `cannot find validator config during port fallback setup`
-        );
-      // update the validator config file with a new "EthEndpoint" port
-      const configFilePath = resolve(
-        this.validator.validatorDir,
-        "config.json"
-      );
-      const configFile = readFileSync(configFilePath);
-      const validatorConfig = JSON.parse(configFile.toString());
-      validatorConfig.Chains[0].Registry.EthEndpoint = `ws://localhost:${HARDHAT_PORT}`;
-
-      writeFileSync(configFilePath, JSON.stringify(validatorConfig, null, 2));
+      this.registryPort = newPort;
     }
+    // Validator uses port 8545 by default, but be sure to set it in case of fallbacks
+    this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
     // You *must* store these in `process.env` to access within the hardhat subprocess
     process.env.HARDHAT_NETWORK = "hardhat";
     process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
-    process.env.HARDHAT_PORT = HARDHAT_PORT.toString();
+    process.env.HARDHAT_PORT = this.registryPort.toString();
 
     // Run a local hardhat node
     this.registry = spawn(
       isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node", "--port", HARDHAT_PORT.toString()], // Use a fallback port on conflicts
+      ["hardhat", "node", "--port", this.registryPort.toString()], // Use a fallback port on conflicts
       {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
@@ -300,8 +299,20 @@ class LocalTableland {
       // If this Class is imported and run by a test runner then the ChildProcess instances are
       // sub-processes of a ChildProcess instance which means in order to kill them in a way that
       // enables graceful shut down they have to run in detached mode and be killed by the pid
-      // @ts-ignore
-      process.kill(-this.registry.pid);
+
+      // Although this shouldn't be an issue, catch an error if the registry
+      // process was already killed—it *is* possible with the validator process
+      // but doesn't seem to happen with the Registry
+      try {
+        // @ts-ignore
+        process.kill(-this.registry.pid);
+      } catch (err: any) {
+        if (err.code === "ESRCH") {
+          throw new Error(`registry process already killed`);
+        } else {
+          throw err;
+        }
+      }
     });
   }
 
@@ -318,7 +329,7 @@ class LocalTableland {
   // e.g. remove docker images, database backups, resetting state
   #_cleanup() {
     shell.rm("-rf", "./tmp");
-    HARDHAT_PORT = 8545;
+    this.registryPort = this.defaultRegistryPort;
     // If the directory hasn't been specified there isn't anything to clean up
     if (!this.validator) return;
 
@@ -334,7 +345,7 @@ export {
   getAccounts,
   getDatabase,
   getRegistry,
+  getRegistryPort,
   getValidator,
-  HARDHAT_PORT,
 };
 export type { Config };

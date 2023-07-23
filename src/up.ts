@@ -29,12 +29,16 @@ const argv = yargs(hideBin(process.argv)).options({
     type: "boolean",
     description: "Silence all output to stdout.",
   },
+  registryPort: {
+    type: "number",
+    description:
+      "Use a custom Registry port for hardhat. Defaults to port 8545.",
+  },
   // note: if a new fallback port is used, clients (SDK, CLI, etc.) that expect port
   // 8545 will not work—the end user can adjust accordingly, but tests that use
   // Local Tableland utilities do not need to
   fallback: {
     type: "boolean",
-    default: false,
     description:
       "Use a fallback Registry port if the default port 8545 is in use.",
   },
@@ -64,6 +68,8 @@ const go = async function () {
   if (tsArgv.docker) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
+  if (typeof tsArgv.registryPort === "number")
+    opts.registryPort = tsArgv.registryPort;
   if (typeof tsArgv.fallback === "boolean") opts.fallback = tsArgv.fallback;
 
   const tableland = new LocalTableland(opts);
@@ -78,8 +84,12 @@ const go = async function () {
 
 // start a tableland network, then catch any uncaught errors and exit loudly
 go().catch((err) => {
-  console.error("unrecoverable error");
-  console.error(err);
+  if (
+    err.message !== `port 8545 already in use; try enabling 'fallback' option`
+  ) {
+    console.error("unrecoverable error");
+    console.error(err);
+  }
 
   // eslint-disable-next-line no-process-exit
   process.exit();
