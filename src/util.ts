@@ -8,7 +8,7 @@ import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 import { type LocalTableland } from "./main.js";
-import shell from "shelljs";
+
 // NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
