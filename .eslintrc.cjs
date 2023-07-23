@@ -21,6 +21,14 @@ module.exports = {
     "plugin:prettier/recommended",
     "plugin:node/recommended",
   ],
+  overrides: [
+    {
+      files: ["validator/config.json"],
+      rules: {
+        "eol-last": "off",
+      },
+    },
+  ],
   parser: "@typescript-eslint/parser",
   plugins: ["@typescript-eslint"],
   parserOptions: {
