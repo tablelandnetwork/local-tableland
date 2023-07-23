@@ -94,11 +94,15 @@ class LocalTableland {
     defaultPortIsTaken = numTries === totalTries;
     // if fallbacks are not enabled, throw since the default port is in use
     if (!this.config.fallback && defaultPortIsTaken)
-      throw new Error(`port ${HARDHAT_PORT} already in use`);
+      throw new Error(
+        `port ${HARDHAT_PORT} already in use; try enabling 'fallback' option`
+      );
 
     // if the default port is taken, we will try a set of 3 fallback ports and
     // throw if none are available
-    let newPort; // note: if a new port is used, common clients that expect port 8545 will not work
+    // note: if a new port is used, common clients that expect port 8545 will
+    // not work as expected since they look for port 8545 by default
+    let newPort;
     if (defaultPortIsTaken) {
       const fallbackPorts = Array.from(
         { length: 3 },
@@ -130,7 +134,11 @@ class LocalTableland {
     // If the new port exists, set it, and update validator config
     if (newPort !== undefined) {
       // log the new port for awareness, also exported elsewhere
-      shell.echo(`Using fallback port ${newPort} for hardhat`);
+      shell.echo(
+        `${chalk.magenta.bold(
+          "[Notice]"
+        )} Registry default port in use, using fallback port ${newPort}`
+      );
       HARDHAT_PORT = newPort;
 
       // the validator should have a directory path set upon initialization
