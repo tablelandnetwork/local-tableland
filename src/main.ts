@@ -40,10 +40,10 @@ class LocalTableland {
 
   validatorDir?: string;
   registryDir?: string;
-  docker?: boolean;
+  docker?: boolean = false;
   verbose?: boolean;
   silent?: boolean;
-  fallback?: boolean;
+  fallback?: boolean = false;
 
   constructor(configParams: Config = {}) {
     this.config = configParams;
