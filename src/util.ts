@@ -73,14 +73,51 @@ const configDescriptors: ConfigDescriptor[] = [
   },
 ];
 
+/**
+ * Configuration object for Local Tableland
+ */
 export type Config = {
+  /**
+   * Instance of a Tableland Validator. If docker flag is set, this must be the
+   * full repository.
+   */
   validator?: string;
+
+  /**
+   * IPath to the Tableland Validator directory.
+   */
   validatorDir?: string;
+
+  /**
+   * Instance of a Tableland Registry.
+   */
   registry?: string;
+
+  /**
+   * Instance of a Tableland Registry.
+   */
   registryDir?: string;
+
+  /**
+   * Path to the Tableland Registry contract repository.
+   */
   docker?: boolean;
+
+  /**
+   * Use Docker to run the Validator.
+   */
   verbose?: boolean;
+
+  /**
+   * Silence all output to stdout.
+   */
   silent?: boolean;
+
+  /**
+   * Use a fallback Registry port if the default port 8545 is in use. Note that
+   * clients will need to be configured to use this port over the default port,
+   * e.g., connect to `http://localhost:<fallbackPort>` instead of port 8545.
+   */
   fallback?: boolean;
 };
 

@@ -10,7 +10,7 @@ const argv = yargs(hideBin(process.argv)).options({
   validator: {
     type: "string",
     description:
-      "Path the the Tableland Validator directory. If docker flag is set this must be the full repository.",
+      "Path the the Tableland Validator directory. If docker flag is set, this must be the full repository.",
   },
   registry: {
     type: "string",
@@ -29,10 +29,14 @@ const argv = yargs(hideBin(process.argv)).options({
     type: "boolean",
     description: "Silence all output to stdout.",
   },
+  // note: if a new fallback port is used, clients (SDK, CLI, etc.) that expect port
+  // 8545 will not work—the end user can adjust accordingly, but tests that use
+  // Local Tableland utilities do not need to
   fallback: {
     type: "boolean",
     default: false,
-    description: "Use fallback ports if hardhat default in use.",
+    description:
+      "Use a fallback Registry port if the default port 8545 is in use.",
   },
   init: {
     type: "boolean",
