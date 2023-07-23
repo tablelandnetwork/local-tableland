@@ -8,7 +8,7 @@ import { getDefaultProvider, Wallet } from "ethers";
 import { helpers, Database, Registry, Validator } from "@tableland/sdk";
 import { chalk } from "./chalk.js";
 import { type LocalTableland } from "./main.js";
-
+import shell from "shelljs";
 // NOTE: We are creating this file in the fixup.sh script so that we can support cjs and esm
 import { getDirname } from "./get-dirname.js";
 const _dirname = getDirname();
@@ -235,7 +235,12 @@ export const inDebugMode = function () {
   return inspector.url() !== undefined;
 };
 
-export const isValidPort = function (port: number) {
+/**
+ * Check if a port is in the valid range (1-65535).
+ * @param port The port number.
+ * @returns Whether or not the port is valid.
+ */
+export const isValidPort = function (port: number): boolean {
   return Number.isInteger(port) && port >= 1 && port <= 65535;
 };
 
@@ -355,6 +360,104 @@ export const defaultRegistryDir = async function () {
   return resolve(_dirname, "..", "..", "registry");
 };
 
+/**
+ * Set up a socket connection to check if a port is in use.
+ * @param port The port number.
+ * @returns true if the port is in use, false otherwise.
+ */
+export function checkPortInUse(port: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    const timeout = 200;
+    const host = "127.0.0.1";
+    const socket = new Socket();
+
+    // Socket connection established, so port is in use
+    const onConnect = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    // If no response on timeout, assume port is in use
+    const onTimeout = () => {
+      cleanup();
+      resolve(true);
+    };
+
+    // If connection is refused, the port is open
+    const onError = (err: Error & { code: string }) => {
+      cleanup();
+      if (err.code === "ECONNREFUSED") {
+        resolve(false);
+      } else {
+        reject(err);
+      }
+    };
+
+    // Attach event listeners
+    socket.once("connect", onConnect);
+    socket.once("timeout", onTimeout);
+    socket.once("error", onError);
+
+    // Clean up event listeners
+    const cleanup = () => {
+      socket.off("connect", onConnect);
+      socket.off("timeout", onTimeout);
+      socket.off("error", onError);
+      socket.destroy();
+    };
+
+    // Set timeout and connect to the port
+    socket.setTimeout(timeout);
+    socket.connect(port, host);
+  });
+}
+
+/**
+ * Probe a port with retries to check if it is in use.
+ * @param port The port number.
+ * @param tries Number of retries to attempt. Defaults to 5.
+ * @param delay Time to wait between retries (in milliseconds). Defaults to 300.
+ * @returns true if the port is in use, false otherwise
+ */
+export async function probePortInUse(
+  port: number,
+  tries: number = 5,
+  delay: number = 300
+): Promise<boolean> {
+  let numTries = 0;
+  while (numTries < tries) {
+    // Note: consider splitting the delay into before and after this check
+    // Racing two instances might cause this to incorrectly return `false`
+    const portIsTaken = await checkPortInUse(port);
+    if (!portIsTaken) return false;
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    numTries++;
+  }
+  return true;
+}
+
+/**
+ * Use a fallback port if the original port is in use.
+ * @param port Original port number.
+ * @param count Number of fallback ports to try.
+ * @returns Fallback port if it is available, undefined otherwise.
+ */
+export async function useFallbackPort(
+  port: number,
+  count: number
+): Promise<number | undefined> {
+  const fallbackPorts = Array.from({ length: count }, (_, i) => port + i + 1);
+  for (const port of fallbackPorts) {
+    // check each port with 1 try, no delay
+    const portIsTaken = await checkPortInUse(port);
+    if (!portIsTaken) {
+      return port;
+    }
+  }
+  return undefined;
+}
+
 const hardhatAccounts = [
   "ac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80",
   "59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d",
@@ -440,55 +543,3 @@ export const getAccounts = function (instance?: LocalTableland): Wallet[] {
 export const getRegistryPort = (instance?: LocalTableland): number => {
   return instance ? instance.registryPort : 8545;
 };
-
-/**
- * Set up a socket connection to check if a port is in use.
- * @param port The port number.
- * @returns `true` if the port is in use, false otherwise.
- */
-export function checkPortInUse(port: number): Promise<boolean> {
-  return new Promise((resolve, reject) => {
-    const timeout = 200;
-    const host = "127.0.0.1";
-    const socket = new Socket();
-
-    // Socket connection established, so port is in use
-    const onConnect = () => {
-      cleanup();
-      resolve(true);
-    };
-
-    // If no response on timeout, assume port is in use
-    const onTimeout = () => {
-      cleanup();
-      resolve(true);
-    };
-
-    // If connection is refused, the port is open
-    const onError = (err: Error & { code: string }) => {
-      cleanup();
-      if (err.code === "ECONNREFUSED") {
-        resolve(false);
-      } else {
-        reject(err);
-      }
-    };
-
-    // Attach event listeners
-    socket.once("connect", onConnect);
-    socket.once("timeout", onTimeout);
-    socket.once("error", onError);
-
-    // Clean up event listeners
-    const cleanup = () => {
-      socket.off("connect", onConnect);
-      socket.off("timeout", onTimeout);
-      socket.off("error", onError);
-      socket.destroy();
-    };
-
-    // Set timeout and connect to the port
-    socket.setTimeout(timeout);
-    socket.connect(port, host);
-  });
-}

@@ -10,7 +10,6 @@ import { ValidatorDev, ValidatorPkg } from "./validators.js";
 import {
   buildConfig,
   Config,
-  checkPortInUse,
   defaultRegistryDir,
   inDebugMode,
   isValidPort,
@@ -23,6 +22,8 @@ import {
   getValidator,
   logSync,
   pipeNamedSubprocess,
+  probePortInUse,
+  useFallbackPort,
   waitForReady,
 } from "./util.js";
 
@@ -69,7 +70,7 @@ class LocalTableland {
     if (typeof config.silent === "boolean") this.silent = config.silent;
     if (typeof config.fallback === "boolean") this.fallback = config.fallback;
     if (typeof config.registryPort === "number") {
-      // Make sure the port is in the valid range 1-65535
+      // Make sure the port is in the valid range
       if (!isValidPort(config.registryPort))
         throw new Error("invalid Registry port");
       this.registryPort = config.registryPort;
@@ -87,34 +88,25 @@ class LocalTableland {
     // TODO: I don't think this is doing anything anymore...
     this.#_cleanup();
 
-    // Check if the hardhat port is in use and retry 5 times (500ms b/w each try)
+    // Check if the hardhat port is in use (defaults to 5 retries, 300ms b/w each try)
+    const registryPortIsTaken = await probePortInUse(this.registryPort);
     // Note: this generally works, but there is a chance that the port will be
-    // taken—e.g., try racing two instances *exactly* at the same, and
-    // `EADDRINUSE` occurs. But generally, it'll work with the expected logic.
-    const totalTries = 5;
-    let numTries = 0;
-    while (numTries < totalTries) {
-      const portIsTaken = await checkPortInUse(this.registryPort);
-      if (!portIsTaken) break;
+    // taken but returns `false`. E.g., try racing two instances at *exactly*
+    // the same, and `EADDRINUSE` occurs. But generally, it'll work as expected.
 
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      numTries++;
-    }
-    // if the number of tries is equal to the total tries, the port is in use
-    const defaultPortIsTaken = numTries === totalTries;
-    // if fallbacks are not enabled, throw since the default port is in use
-    if (!this.fallback && defaultPortIsTaken)
+    // If fallbacks are not enabled, throw since the default port is in use
+    if (!this.fallback && registryPortIsTaken)
       throw new Error(
         `port ${this.registryPort} already in use; try enabling 'fallback' option`
       );
 
     // If the port is not taken, notify the user only if it's a not the default.
-    // Else, the registry port is taken, so we will try a set of 3 fallback
-    // ports and throw if none are available.
+    // Else, the registry port is taken, so we will try a set of fallback ports
+    // and throw if none are available.
     // Note: if a new port is used, common clients that expect port 8545 will
     // not work as expected since they look for port 8545 by default.
-    if (!defaultPortIsTaken) {
-      // notify that we're using a custom port since it's not the default 8545
+    if (!registryPortIsTaken) {
+      // Notify that we're using a custom port since it's not the default 8545
       this.registryPort !== this.defaultRegistryPort &&
         shell.echo(
           `[${chalk.magenta.bold("Notice")}] Registry is using custom port ${
@@ -122,25 +114,14 @@ class LocalTableland {
           }`
         );
     } else {
-      let newPort;
-      const fallbackPorts = Array.from(
-        { length: 3 },
-        (_, i) => this.registryPort + i + 1
-      );
-      for (const port of fallbackPorts) {
-        // check each port with 1 try, no delay
-        const portIsTaken = await checkPortInUse(port);
-        if (!portIsTaken) {
-          newPort = port;
-          break;
-        }
-      }
-      // if no new port was set, we were unable to find an open port
+      // Try 3 fallback ports (simply increments the passed port number)
+      const newPort = await useFallbackPort(this.registryPort, 3);
+      // If no new port was set, we were unable to find an open port
       if (newPort === undefined)
         throw new Error(
           `cannot start a local chain, port ${this.registryPort} and all fallbacks in use`
         );
-      // notify that we're using a fallback port
+      // Notify that we're using a fallback port
       shell.echo(
         `[${chalk.magenta.bold(
           "Notice"
