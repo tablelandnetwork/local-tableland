@@ -130,17 +130,6 @@ class LocalTableland {
       this.registryPort = newPort;
     }
 
-    // Need to determine if we are starting the validator via docker
-    // and a local repo, or if are running a binary etc...
-    // Note: we do this before spawning the registry so that in the instance of a
-    // port conflict, we can update the validator config with the new hardhat
-    // port before starting the validator process
-    const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
-
-    // If the new port exists, set it, and update validator config
-    // Else, use the default port passed in
-    this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
-
     // You *must* store these in `process.env` to access within the hardhat subprocess
     process.env.HARDHAT_NETWORK = "hardhat";
     process.env.HARDHAT_UNLIMITED_CONTRACT_SIZE = "true";
@@ -190,6 +179,12 @@ class LocalTableland {
       ),
       !inDebugMode()
     );
+
+    // Need to determine if we are starting the validator via docker
+    // and a local repo, or if are running a binary etc...
+    const ValidatorClass = this.docker ? ValidatorDev : ValidatorPkg;
+
+    this.validator = new ValidatorClass(this.validatorDir, this.registryPort);
 
     // run this before starting in case the last instance of the validator didn't get cleanup after
     // this might be needed if a test runner force quits the parent local-tableland process
