@@ -115,7 +115,8 @@ class ValidatorPkg {
       shell.rm("-f", filepath);
     }
 
-    // reset the Validator config file in case it was modified upon hardhat port fallbacks
+    // reset the Validator config file in case it was modified with a custom
+    // Registry hardhat port
     if (ORIGINAL_VALIDATOR_CONFIG) {
       const configFilePath = join(this.validatorDir, "config.json");
       writeFileSync(configFilePath, ORIGINAL_VALIDATOR_CONFIG);
@@ -220,7 +221,8 @@ class ValidatorDev {
       spawnSync("rm", ["-f", filepath]);
     }
 
-    // reset the Validator config file that is modified on startup and/or port fallbacks
+    // reset the Validator config file that is modified on startup and/or custom
+    // Registry port configurations
     if (ORIGINAL_VALIDATOR_CONFIG) {
       const configFilePath = join(
         this.validatorDir,

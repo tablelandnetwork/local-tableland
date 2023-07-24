@@ -30,7 +30,6 @@ export type ConfigDescriptor = {
     | "VERBOSE"
     | "SILENT"
     | "DOCKER"
-    | "FALLBACK"
     | "REGISTRY_PORT";
   file:
     | "validatorDir"
@@ -38,7 +37,6 @@ export type ConfigDescriptor = {
     | "verbose"
     | "silent"
     | "docker"
-    | "fallback"
     | "registryPort";
   arg:
     | "validator"
@@ -46,7 +44,6 @@ export type ConfigDescriptor = {
     | "verbose"
     | "silent"
     | "docker"
-    | "fallback"
     | "registryPort";
   isPath: boolean;
 };
@@ -93,13 +90,6 @@ const configDescriptors: ConfigDescriptor[] = [
     isPath: false,
   },
   {
-    name: "fallback",
-    env: "FALLBACK",
-    file: "fallback",
-    arg: "fallback",
-    isPath: false,
-  },
-  {
     name: "registryPort",
     env: "REGISTRY_PORT",
     file: "registryPort",
@@ -117,48 +107,35 @@ export type Config = {
    * full repository.
    */
   validator?: string;
-
   /**
    * IPath to the Tableland Validator directory.
    */
   validatorDir?: string;
-
   /**
    * Instance of a Tableland Registry.
    */
   registry?: string;
-
   /**
    * Instance of a Tableland Registry.
    */
   registryDir?: string;
-
   /**
    * Path to the Tableland Registry contract repository.
    */
   docker?: boolean;
-
   /**
    * Use Docker to run the Validator.
    */
   verbose?: boolean;
-
   /**
    * Silence all output to stdout.
    */
   silent?: boolean;
-
-  /**
-   * Use a fallback Registry port if the default port 8545 is in use or a custom
-   * port is desired. Note that clients will need to be configured to use this
-   * port over the default port, e.g., connect to `http://127.0.0.1:<fallbackPort>`
-   * instead of port 8545.
-   */
-  fallback?: boolean;
-
   /**
    * Use a custom Registry hardhat port, e.g., `http://127.0.0.1:<registryPort>`.
-   * Must have fallbacks enabled.
+   * Note that clients will need to be configured to use this port over the
+   * default port, e.g., connect to `http://127.0.0.1:<registryPort>`
+   * instead of `http://127.0.0.1:8545`.
    */
   registryPort?: number;
 };
@@ -435,27 +412,6 @@ export async function probePortInUse(
     numTries++;
   }
   return true;
-}
-
-/**
- * Use a fallback port if the original port is in use.
- * @param port Original port number.
- * @param count Number of fallback ports to try.
- * @returns Fallback port if it is available, undefined otherwise.
- */
-export async function useFallbackPort(
-  port: number,
-  count: number
-): Promise<number | undefined> {
-  const fallbackPorts = Array.from({ length: count }, (_, i) => port + i + 1);
-  for (const port of fallbackPorts) {
-    // check each port with 1 try, no delay
-    const portIsTaken = await checkPortInUse(port);
-    if (!portIsTaken) {
-      return port;
-    }
-  }
-  return undefined;
 }
 
 const hardhatAccounts = [

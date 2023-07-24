@@ -29,18 +29,12 @@ const argv = yargs(hideBin(process.argv)).options({
     type: "boolean",
     description: "Silence all output to stdout.",
   },
-  // note: if a new fallback port is used, clients (SDK, CLI, etc.) that expect port
-  // 8545 will not work—the end user can adjust accordingly, but tests that use
-  // Local Tableland utilities do not need to and should work as expected.
-  fallback: {
-    type: "boolean",
-    description:
-      "Use a fallback Registry port if the default port 8545 is in use or a custom port is desired.",
-  },
+  // note: if a new Registry port is used, clients (SDK, CLI, etc.) that expect port
+  // 8545 will not work unless the RPC is explicity passed with this port—but, tests
+  // w/ Local Tableland can retrieve it with `getRegistryPort(lt)` and run as intended.
   registryPort: {
     type: "number",
-    description:
-      "Use a custom Registry port for hardhat. Must have fallbacks enabled.",
+    description: "Use a custom Registry port for hardhat.",
   },
   init: {
     type: "boolean",
@@ -68,9 +62,6 @@ const go = async function () {
   if (tsArgv.docker) opts.docker = tsArgv.docker;
   if (typeof tsArgv.verbose === "boolean") opts.verbose = tsArgv.verbose;
   if (typeof tsArgv.silent === "boolean") opts.silent = tsArgv.silent;
-  if (typeof tsArgv.fallback === "boolean") opts.fallback = tsArgv.fallback;
-  // TODO: whatever gets passed here doesn't actually do anything
-  // e.g., passing `--format --registryPort 8999` still uses 8545
   if (typeof tsArgv.registryPort === "number")
     opts.registryPort = tsArgv.registryPort;
 
@@ -86,9 +77,7 @@ const go = async function () {
 
 // start a tableland network, then catch any uncaught errors and exit loudly
 go().catch((err) => {
-  if (
-    err.message === `port 8545 already in use; try enabling 'fallback' option`
-  ) {
+  if (err.message.includes(`port already in use`)) {
     console.error(err.message);
   } else {
     console.error("unrecoverable error");

@@ -23,7 +23,6 @@ import {
   logSync,
   pipeNamedSubprocess,
   probePortInUse,
-  useFallbackPort,
   waitForReady,
 } from "./util.js";
 
@@ -43,7 +42,6 @@ class LocalTableland {
   docker?: boolean;
   verbose?: boolean;
   silent?: boolean;
-  fallback?: boolean;
   registryPort: number;
 
   constructor(configParams: Config = {}) {
@@ -68,7 +66,6 @@ class LocalTableland {
     if (typeof config.docker === "boolean") this.docker = config.docker;
     if (typeof config.verbose === "boolean") this.verbose = config.verbose;
     if (typeof config.silent === "boolean") this.silent = config.silent;
-    if (typeof config.fallback === "boolean") this.fallback = config.fallback;
     if (typeof config.registryPort === "number") {
       // Make sure the port is in the valid range
       if (!isValidPort(config.registryPort))
@@ -94,18 +91,11 @@ class LocalTableland {
     // taken but returns `false`. E.g., try racing two instances at *exactly*
     // the same, and `EADDRINUSE` occurs. But generally, it'll work as expected.
 
-    // If fallbacks are not enabled, throw since the default port is in use
-    if (!this.fallback && registryPortIsTaken)
-      throw new Error(
-        `port ${this.registryPort} already in use; try enabling 'fallback' option`
-      );
-
-    // If the port is not taken, notify the user only if it's a not the default.
-    // Else, the registry port is taken, so we will try a set of fallback ports
-    // and throw if none are available.
-    // Note: if a new port is used, common clients that expect port 8545 will
-    // not work as expected since they look for port 8545 by default.
-    if (!registryPortIsTaken) {
+    // If the Registry port it taken, throw an error.
+    // Else, notify the user only if it's a not the default and is custom.
+    if (registryPortIsTaken) {
+      throw new Error(`port ${this.registryPort} already in use`);
+    } else {
       // Notify that we're using a custom port since it's not the default 8545
       this.registryPort !== this.defaultRegistryPort &&
         shell.echo(
@@ -113,21 +103,6 @@ class LocalTableland {
             this.registryPort
           }`
         );
-    } else {
-      // Try 3 fallback ports (simply increments the passed port number)
-      const newPort = await useFallbackPort(this.registryPort, 3);
-      // If no new port was set, we were unable to find an open port
-      if (newPort === undefined)
-        throw new Error(
-          `cannot start a local chain, port ${this.registryPort} and all fallbacks in use`
-        );
-      // Notify that we're using a fallback port
-      shell.echo(
-        `[${chalk.magenta.bold(
-          "Notice"
-        )}] Registry default port in use, using fallback port ${newPort}`
-      );
-      this.registryPort = newPort;
     }
 
     // You *must* store these in `process.env` to access within the hardhat subprocess
@@ -138,7 +113,7 @@ class LocalTableland {
     // Run a local hardhat node
     this.registry = spawn(
       isWindows() ? "npx.cmd" : "npx",
-      ["hardhat", "node", "--port", this.registryPort.toString()], // Use a fallback port on conflicts
+      ["hardhat", "node", "--port", this.registryPort.toString()], // Use a custom hardhat port
       {
         // we can't run in windows if we use detached mode
         detached: !isWindows(),
