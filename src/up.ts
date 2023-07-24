@@ -87,8 +87,10 @@ const go = async function () {
 // start a tableland network, then catch any uncaught errors and exit loudly
 go().catch((err) => {
   if (
-    err.message !== `port 8545 already in use; try enabling 'fallback' option`
+    err.message === `port 8545 already in use; try enabling 'fallback' option`
   ) {
+    console.error(err.message);
+  } else {
     console.error("unrecoverable error");
     console.error(err);
   }
