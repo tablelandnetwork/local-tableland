@@ -225,52 +225,56 @@ describe("Validator and Chain startup and shutdown", function () {
         expect.fail(`failed to start local network: ${err.message}`);
       }
     });
-  });
 
-  it("successfully starts with custom Registry port", async function () {
-    const customPort = 9999;
-    lt = new LocalTableland({
-      silent: true,
-      fallback: true,
-      registryPort: customPort,
+    it("successfully starts with custom Registry port", async function () {
+      const customPort = 9999;
+      lt = new LocalTableland({
+        silent: true,
+        fallback: true,
+        registryPort: customPort,
+      });
+      // Make sure it is not in use
+      const portInUse = await checkPortInUse(customPort);
+      expect(portInUse).to.equal(false);
+      // Local Tableland should start successfully on custom Registry port
+      try {
+        const startupExecutionTime = await measureExecutionTime(() =>
+          lt.start()
+        );
+        executionTimes.start.push(startupExecutionTime);
+      } catch (err) {
+        expect.fail(`failed to start local network: ${err.message}`);
+      }
+      const ltPort = getRegistryPort(lt);
+      expect(ltPort).to.equal(customPort);
     });
-    // Make sure it is not in use
-    const portInUse = await checkPortInUse(customPort);
-    expect(portInUse).to.equal(false);
-    // Local Tableland should start successfully on custom Registry port
-    try {
-      const startupExecutionTime = await measureExecutionTime(() => lt.start());
-      executionTimes.start.push(startupExecutionTime);
-    } catch (err) {
-      expect.fail(`failed to start local network: ${err.message}`);
-    }
-    const ltPort = getRegistryPort(lt);
-    expect(ltPort).to.equal(customPort);
-  });
 
-  it("successfully starts with fallback port when desired custom Registry port is in use", async function () {
-    const customPort = 9999;
-    lt = new LocalTableland({
-      silent: true,
-      fallback: true,
-      registryPort: customPort,
+    it("successfully starts with fallback port if custom Registry port in use", async function () {
+      const customPort = 9999;
+      lt = new LocalTableland({
+        silent: true,
+        fallback: true,
+        registryPort: customPort,
+      });
+      // Start a server on custom port to block Local Tableland from using it
+      server = await startMockServer(customPort);
+      // Check if it is in use
+      const portInUse = await checkPortInUse(customPort);
+      expect(portInUse).to.equal(true);
+
+      // Local Tableland should start successfully on first fallback port,
+      // which is `customPort + 1`
+      try {
+        const startupExecutionTime = await measureExecutionTime(() =>
+          lt.start()
+        );
+        executionTimes.start.push(startupExecutionTime);
+      } catch (err) {
+        expect.fail(`failed to start local network: ${err.message}`);
+      }
+      const ltPort = getRegistryPort(lt);
+      expect(ltPort).to.equal(customPort + 1);
     });
-    // Start a server on custom port to block Local Tableland from using it
-    server = await startMockServer(customPort);
-    // Check if it is in use
-    const portInUse = await checkPortInUse(customPort);
-    expect(portInUse).to.equal(true);
-
-    // Local Tableland should start successfully on first fallback port,
-    // which is `customPort + 1`
-    try {
-      const startupExecutionTime = await measureExecutionTime(() => lt.start());
-      executionTimes.start.push(startupExecutionTime);
-    } catch (err) {
-      expect.fail(`failed to start local network: ${err.message}`);
-    }
-    const ltPort = getRegistryPort(lt);
-    expect(ltPort).to.equal(customPort + 1);
   });
 });
 
