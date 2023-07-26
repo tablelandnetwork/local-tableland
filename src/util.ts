@@ -108,7 +108,7 @@ export type Config = {
    */
   validator?: string;
   /**
-   * IPath to the Tableland Validator directory.
+   * Path to the Tableland Validator directory.
    */
   validatorDir?: string;
   /**
@@ -116,15 +116,15 @@ export type Config = {
    */
   registry?: string;
   /**
-   * Instance of a Tableland Registry.
+   * Path to the Tableland Registry contract repository.
    */
   registryDir?: string;
   /**
-   * Path to the Tableland Registry contract repository.
+   * Use Docker to run the Validator.
    */
   docker?: boolean;
   /**
-   * Use Docker to run the Validator.
+   * Output verbose logs to stdout.
    */
   verbose?: boolean;
   /**
