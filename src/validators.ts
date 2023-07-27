@@ -60,11 +60,11 @@ class ValidatorPkg {
 
     // get the validator config file
     const configFilePath = join(this.validatorDir, "config.json");
-    const configFile = readFileSync(configFilePath);
-    const validatorConfig = JSON.parse(configFile.toString());
+    const configFileStr = readFileSync(configFilePath).toString();
+    const validatorConfig = JSON.parse(configFileStr);
 
     // save the validator config state
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+    ORIGINAL_VALIDATOR_CONFIG = configFileStr;
 
     // make sure the value in the config file matches the port we are using
     // if not, update the validator config file with a new `EthEndpoint` port
@@ -156,7 +156,7 @@ class ValidatorDev {
     const validatorConfig = JSON.parse(configFileStr);
 
     // save the validator config state before this script modifies it
-    ORIGINAL_VALIDATOR_CONFIG = JSON.stringify(validatorConfig, null, 2);
+    ORIGINAL_VALIDATOR_CONFIG = configFileStr;
 
     // make sure the value in the config file matches the port we are using
     // if not, update the validator config file with a new `EthEndpoint` port
