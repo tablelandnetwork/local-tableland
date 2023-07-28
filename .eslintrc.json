@@ -12,14 +12,7 @@
     "ecmaVersion": 12,
     "project": "./lint.tsconfig.json"
   },
-  "ignorePatterns": [
-    "**/dist/",
-    "**/coverage/",
-    "**/docs/",
-    "packages/sdk/src/validator/client/*",
-    "packages/local/registry/*",
-    "*.d.ts"
-  ],
+  "ignorePatterns": ["dist/", "coverage/", "registry/*", "*.d.ts"],
   "globals": {
     // mocha
     "before": true,

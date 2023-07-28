@@ -1,6 +1,6 @@
+import { join } from "path";
 import chai from "chai";
 import shell from "shelljs";
-import { join } from "path";
 
 const expect = chai.expect;
 
@@ -21,11 +21,15 @@ describe("Project builder", function () {
   });
 
   it("should create a config file", async function () {
-    /* eslint-disable node/no-unsupported-features/es-syntax */
     // Pass input from `choose-yes.txt` to `up.js` to answer `y` to prompt
-    shell
-      .cat(join("..", "test", "choose-yes.txt"))
-      .exec(join("..", "dist", "esm", "up.js --init"));
+    try {
+      shell
+        .cat(join("..", "test", "choose-yes.txt"))
+        .exec(join("..", "dist", "esm", "up.js --init"));
+    } catch (err) {
+      console.log("creating config file failed with:");
+      console.log(err);
+    }
     // Import the created config file & example config file
     const createdFile = await import(join("..", "tmp", "tableland.config.js"));
     const exampleFile = await import(
@@ -66,8 +70,8 @@ describe("Project builder", function () {
     expect(cliOut.toString()).to.match(/run this again anytime/);
 
     // No file should have been created
-    expect(import(join("..", "tmp", "tableland.config.js"))).to.be.rejectedWith(
-      "Cannot find module"
-    );
+    await expect(
+      import(join("..", "tmp", "tableland.config.js"))
+    ).to.be.rejectedWith("Cannot find module");
   });
 });
