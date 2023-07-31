@@ -165,8 +165,7 @@ export const loadSpecTestData = function (specPath) {
 
       acc.push(method);
       return acc;
-    },
-    []);
+    }, []);
 
     routes.push({ route, routeTemplate, methods });
   }
