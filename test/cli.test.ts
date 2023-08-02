@@ -7,17 +7,26 @@ const expect = chai.expect;
 describe("Project builder", function () {
   // Tests need some extra time running `up.js` (async CLI inputs & spins up LT)
   this.timeout(20000); // Starting up LT takes 3000-7000ms; shutting down takes <10-10000ms
+
+  before(function () {
+    // Create tmp dir to run the project builder in
+    shell.rm("-rf", "tmp/*");
+    shell.mkdir("-p", "tmp");
+  });
+
+  after(function () {
+    shell.rm("-rf", "tmp/*");
+  });
+
   beforeEach(function () {
     // Create tmp dir to run the project builder in
-    shell.rm("-rf", "tmp");
-    shell.mkdir("-p", "tmp");
+    shell.rm("-rf", "tmp/*");
     shell.cd("tmp");
   });
 
   afterEach(function () {
     // Cleanup tmp dir
     shell.cd("..");
-    shell.rm("-rf", "tmp");
   });
 
   it("should create a config file", async function () {
