@@ -31,14 +31,10 @@ describe("Project builder", function () {
 
   it("should create a config file", async function () {
     // Pass input from `choose-yes.txt` to `up.js` to answer `y` to prompt
-    try {
-      shell
-        .cat(join("..", "test", "choose-yes.txt"))
-        .exec(join("..", "dist", "esm", "up.js --init"));
-    } catch (err) {
-      console.log("creating config file failed with:");
-      console.log(err);
-    }
+    shell
+      .cat(join("..", "test", "choose-yes.txt"))
+      .exec(join("..", "dist", "esm", "up.js --init"));
+
     // Import the created config file & example config file
     const createdFile = await import(join("..", "tmp", "tableland.config.js"));
     const exampleFile = await import(
