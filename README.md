@@ -1,5 +1,7 @@
 # @tableland/local
 
+**NOTICE**: Development has moved to: https://github.com/tablelandnetwork/tableland-js/
+
 [![Review](https://github.com/tablelandnetwork/local-tableland/actions/workflows/review.yml/badge.svg)](https://github.com/tablelandnetwork/local-tableland/actions/workflows/review.yml)
 [![Test](https://github.com/tablelandnetwork/local-tableland/actions/workflows/test.yml/badge.svg)](https://github.com/tablelandnetwork/local-tableland/actions/workflows/test.yml)
 [![Publish](https://github.com/tablelandnetwork/local-tableland/actions/workflows/publish.yml/badge.svg)](https://github.com/tablelandnetwork/local-tableland/actions/workflows/publish.yml)
